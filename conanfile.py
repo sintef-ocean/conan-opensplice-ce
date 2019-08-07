@@ -1,7 +1,9 @@
 from conans import ConanFile, tools
 import os
+import subprocess
 
 buildScript = "build-opensplice.sh"
+releaseScript = "ospl_release.com.sh"
 
 class OpenSplice(ConanFile):
     name = "opensplice"
@@ -36,6 +38,9 @@ class OpenSplice(ConanFile):
         self.copy("*", dst="lib", src=os.path.join(srcDir, "lib"))
         self.copy("*", dst="etc", src=os.path.join(srcDir, "etc"))
         self.copy("release.com", dst="", src=srcDir)
+        os.rename(
+            os.path.join(self.package_folder, "release.com"),
+            os.path.join(self.package_folder, releaseScript))
 
     def package_info(self):
         self.cpp_info.includedirs = [
@@ -49,3 +54,17 @@ class OpenSplice(ConanFile):
             "dcpsisocpp",
             "dcpssacpp"
         ]
+        self.env_info.PATH.append(os.path.join(self.package_folder, "bin"))
+        self.env_info.PATH.append(self.package_folder) # For the release script
+        self.env_info.LD_LIBRARY_PATH.append(os.path.join(self.package_folder, "lib"))
+        self.env_info.DYLD_LIBRARY_PATH.append(os.path.join(self.package_folder, "lib"))
+
+        # Extract OSPL_* environment variables from release script and add them
+        # to self.env_info
+        proc = subprocess.run(
+            ["bash", "-c", "source {} && env".format(os.path.join(self.package_folder, releaseScript))],
+            capture_output=True, check=True, text=True)
+        for line in proc.stdout.split('\n'):
+            pair = line.split('=', 1)
+            if len(pair) == 2 and pair[0].startswith("OSPL_"):
+                self.env_info.__setattr__(pair[0], pair[1])
