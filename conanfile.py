@@ -6,6 +6,8 @@ class OpenSplice(ConanFile):
     name = "opensplice"
     version = "6.9.190705-OSS"
     license = "Apache-2.0"
+    url = "https://stash.code.sintef.no/projects/MOVE/repos/conan-opensplice/browse"
+    description = "Vortex OpenSplice Community Edition"
     homepage = "https://github.com/ADLINK-IST/opensplice"
     settings = "os", "compiler", "build_type", "arch"
     generators = "cmake"
