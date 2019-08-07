@@ -1,4 +1,5 @@
 from conans import ConanFile, tools
+import os
 
 buildScript = "build-opensplice.sh"
 
@@ -29,10 +30,12 @@ class OpenSplice(ConanFile):
         self.run("bash {} {} {}".format(buildScript, self._ospl_target(), tools.cpu_count()))
 
     def package(self):
-        srcDir = "opensplice/install/HDE/" + self._ospl_target()
-        self.copy("*", dst="include", src=srcDir+"/include")
-        self.copy("*", dst="bin", src=srcDir+"/bin")
-        self.copy("*", dst="lib", src=srcDir+"/lib")
+        srcDir = os.path.join("opensplice", "install", "HDE", self._ospl_target())
+        self.copy("*", dst="include", src=os.path.join(srcDir, "include"))
+        self.copy("*", dst="bin", src=os.path.join(srcDir, "bin"))
+        self.copy("*", dst="lib", src=os.path.join(srcDir, "lib"))
+        self.copy("*", dst="etc", src=os.path.join(srcDir, "etc"))
+        self.copy("release.com", dst="", src=srcDir)
 
     def package_info(self):
         self.cpp_info.includedirs = [
