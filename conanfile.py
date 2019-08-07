@@ -19,17 +19,17 @@ class OpenSplice(ConanFile):
     }
     exports_sources = [ buildScript ]
 
-    def ospl_target(self):
+    def _ospl_target(self):
         return "{}.{}-{}".format(
             self.settings.arch.value.lower(),
             self.settings.os.value.lower(),
             "debug" if self.settings.build_type == "Debug" else "release")
 
     def build(self):
-        self.run("bash {} {} {}".format(buildScript, self.ospl_target(), tools.cpu_count()))
+        self.run("bash {} {} {}".format(buildScript, self._ospl_target(), tools.cpu_count()))
 
     def package(self):
-        srcDir = "opensplice/install/HDE/" + self.ospl_target()
+        srcDir = "opensplice/install/HDE/" + self._ospl_target()
         self.copy("*", dst="include", src=srcDir+"/include")
         self.copy("*", dst="bin", src=srcDir+"/bin")
         self.copy("*", dst="lib", src=srcDir+"/lib")
