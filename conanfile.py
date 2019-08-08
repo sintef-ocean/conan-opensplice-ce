@@ -1,46 +1,64 @@
 from conans import ConanFile, tools
-import os
-import subprocess
+import os, subprocess
 
-buildScript = "build-opensplice.sh"
-releaseScript = "ospl_release.com.sh"
 
 class OpenSplice(ConanFile):
     name = "opensplice"
     version = "6.9.190705-OSS"
     license = "Apache-2.0"
-    url = "https://stash.code.sintef.no/projects/MOVE/repos/conan-opensplice/browse"
     description = "Vortex OpenSplice Community Edition"
+    url = "https://stash.code.sintef.no/projects/MOVE/repos/conan-opensplice/browse"
     homepage = "https://github.com/ADLINK-IST/opensplice"
-    settings = "os", "compiler", "build_type", "arch"
-    generators = "cmake"
-    scm = {
-        "type": "git",
-        "subfolder": "opensplice",
-        "url": "https://github.com/ADLINK-IST/opensplice.git",
-        "revision": "OSPL_V6_9_190705OSS_RELEASE"
-    }
-    exports_sources = [ buildScript ]
 
+    settings = "os", "compiler", "build_type", "arch"
+    default_options = {
+        "cygwin_installer:additional_packages": "git,perl,bison,flex,gawk,zip,unzip",
+        "cygwin_installer:with_pear": False
+    }
+    generators = "cmake"
+
+    _buildscript = "build-opensplice.sh"
+    _source_subfolder = "source_subfolder"
+    exports_sources = [ _buildscript ]
+
+    @property
     def _ospl_target(self):
-        return "{}.{}-{}".format(
-            self.settings.arch.value.lower(),
-            self.settings.os.value.lower(),
-            "debug" if self.settings.build_type == "Debug" else "release")
+        arch = self.settings.arch.value.lower()
+        if self.settings.os == "Windows":
+            system = "win64" if arch == "x86_64" else "win32"
+        else:
+            system = self.settings.os.value.lower()
+        config = "debug" if self.settings.build_type == "Debug" else "release"
+        return "{}.{}-{}".format(arch, system, config)
+
+    def build_requirements(self):
+        if self.settings.os == "Windows":
+            self.build_requires("cygwin_installer/2.9.0@bincrafters/stable")
+
+    def source(self):
+        revision = "OSPL_V" + self.version.replace(".", "_").replace("-", "") + "_RELEASE"
+        url = "https://github.com/ADLINK-IST/opensplice/archive/" + revision + ".tar.gz"
+        tools.get(url)
+        os.rename("opensplice-" + revision, self._source_subfolder)
 
     def build(self):
-        self.run("bash {} {} {}".format(buildScript, self._ospl_target(), tools.cpu_count()))
+        with tools.vcvars(self.settings):
+            self.run(
+                "bash {} {} {} {} {}".format(
+                    self._buildscript,
+                    self._source_subfolder,
+                    self._ospl_target,
+                    tools.cpu_count(),
+                    "MSVC" if self.settings.compiler == "Visual Studio" else ""),
+                win_bash=True)
 
     def package(self):
-        srcDir = os.path.join("opensplice", "install", "HDE", self._ospl_target())
+        srcDir = os.path.join(self._source_subfolder, "install", "HDE", self._ospl_target)
         self.copy("*", dst="include", src=os.path.join(srcDir, "include"))
         self.copy("*", dst="bin", src=os.path.join(srcDir, "bin"))
         self.copy("*", dst="lib", src=os.path.join(srcDir, "lib"))
         self.copy("*", dst="etc", src=os.path.join(srcDir, "etc"))
-        self.copy("release.com", dst="", src=srcDir)
-        os.rename(
-            os.path.join(self.package_folder, "release.com"),
-            os.path.join(self.package_folder, releaseScript))
+        self.copy("release.bat" if self.settings.os == "Windows" else "release.com", dst="", src=srcDir)
 
     def package_info(self):
         self.cpp_info.includedirs = [
@@ -55,15 +73,16 @@ class OpenSplice(ConanFile):
             "dcpssacpp"
         ]
         self.env_info.PATH.append(os.path.join(self.package_folder, "bin"))
-        self.env_info.PATH.append(self.package_folder) # For the release script
         self.env_info.LD_LIBRARY_PATH.append(os.path.join(self.package_folder, "lib"))
         self.env_info.DYLD_LIBRARY_PATH.append(os.path.join(self.package_folder, "lib"))
 
         # Extract OSPL_* environment variables from release script and add them
         # to self.env_info
-        proc = subprocess.run(
-            ["bash", "-c", "source {} && env".format(os.path.join(self.package_folder, releaseScript))],
-            capture_output=True, check=True, text=True)
+        if (self.settings.os == "Windows"):
+            envCmd = ["cmd.exe", "/C", "release.bat && set"]
+        else:
+            envCmd = ["bash", "-c", "source release.com && env"]
+        proc = subprocess.run(envCmd, stdout=subprocess.PIPE, check=True, universal_newlines=True)
         for line in proc.stdout.split('\n'):
             pair = line.split('=', 1)
             if len(pair) == 2 and pair[0].startswith("OSPL_"):
