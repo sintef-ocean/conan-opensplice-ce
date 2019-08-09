@@ -17,8 +17,9 @@ class OpenSplice(ConanFile):
     }
 
     _buildscript = "build-opensplice.sh"
+    _findscript = "FindOpenSplice.cmake"
     _source_subfolder = "source_subfolder"
-    exports_sources = [ _buildscript ]
+    exports_sources = [ _buildscript, _findscript ]
 
     @property
     def _ospl_platform(self):
@@ -59,6 +60,7 @@ class OpenSplice(ConanFile):
         self.copy("*", dst="lib", src=os.path.join(srcDir, "lib"))
         self.copy("*", dst="etc", src=os.path.join(srcDir, "etc"))
         self.copy("release.bat" if self.settings.os == "Windows" else "release.com", dst="", src=srcDir)
+        self.copy(self._findscript)
 
     def package_info(self):
         self.cpp_info.includedirs = [
