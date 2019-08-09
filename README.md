@@ -23,7 +23,7 @@ people usually won't look for documentation in their Conan package cache.
 
 Currently, the usage information provided by the package (i.e., include
 directories and library paths) enables consumers to use OpenSplice's
-"ISO C++ 2" API.  The other, older APIs are also built and available in the
+[ISO C++ 2] API.  The other, older APIs are also built and available in the
 package cache, but using them requires a bit more manual work.
 
 Building the package
@@ -54,6 +54,7 @@ distribution.  (Note that these are also available in the Conan package
 directory in case you need them.)
 
 
+[ISO C++ 2]: http://download.prismtech.com/docs/Vortex/apis/ospl/isocpp2/html/index.html
 [`conanfile.py`]: ./conanfile.py
 [`cygwin_installer`]: https://docs.conan.io/en/latest/systems_cross_building/windows_subsystems.html
 [`virtualenv`]: https://docs.conan.io/en/latest/reference/generators/virtualenv.html
