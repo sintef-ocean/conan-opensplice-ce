@@ -50,7 +50,7 @@ class OpenSplice(ConanFile):
                     self._ospl_target,
                     tools.cpu_count(),
                     "MSVC" if self.settings.compiler == "Visual Studio" else ""),
-                win_bash=True)
+                win_bash=(self.settings.os == "Windows"))
 
     def package(self):
         srcDir = os.path.join(self._source_subfolder, "install", "HDE", self._ospl_target)
