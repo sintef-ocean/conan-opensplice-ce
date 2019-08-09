@@ -15,7 +15,7 @@ class OpenSplice(ConanFile):
         "cygwin_installer:additional_packages": "git,perl,bison,flex,gawk,zip,unzip",
         "cygwin_installer:with_pear": False
     }
-    generators = "cmake"
+    generators = [ "cmake", "virtualenv" ]
 
     _buildscript = "build-opensplice.sh"
     _source_subfolder = "source_subfolder"
