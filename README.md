@@ -1,6 +1,31 @@
 Vortex OpenSplice DDS package recipe for Conan
 ==============================================
 
+Supported platforms and features
+--------------------------------
+This package currently only supports the following platform and toolchain
+settings:
+
+  - `arch`: `x86` or `x86_64`
+  - `os`: `Linux` or `Windows`
+  - `compiler`: `gcc` on Linux or `Visual Studio` on Windows
+
+Conan being primarily a C/C++ package manager, many of OpenSplice's
+non-C/C++ features have been disabled for the sake of efficiency.
+These are:
+
+  - Java support (`OVERRIDE_INCLUDE_JAVA=no`)
+  - C# support (`OVERRIDE_INCLUDE_CS=no`)
+  - CORBA support (`OVERRIDE_INCLUDE_ORB=no`)
+
+Furthermore, API documentation is not generated (`OSPL_DOCS=none`), because
+people usually won't look for documentation in their Conan package cache.
+
+Currently, the usage information provided by the package (i.e., include
+directories and library paths) enables consumers to use OpenSplice's
+"ISO C++ 2" API.  The other, older APIs are also built and available in the
+package cache, but using them requires a bit more manual work.
+
 Building the package
 --------------------
 After cloning this repository, run the following command to build and install
