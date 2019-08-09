@@ -64,12 +64,12 @@ class OpenSplice(ConanFile):
         self.cpp_info.includedirs = [
             "include",
             "include/sys",
+            "include/dcps/C++/isocpp2"
             "include/dcps/C++/SACPP",
-            "include/dcps/C++/isocpp"
         ]
         self.cpp_info.libs = [
             "ddskernel",
-            "dcpsisocpp",
+            "dcpsisocpp2",
             "dcpssacpp"
         ]
         self.env_info.PATH.append(os.path.join(self.package_folder, "bin"))
