@@ -21,14 +21,13 @@ class OpenSplice(ConanFile):
     exports_sources = [ _buildscript ]
 
     @property
-    def _ospl_target(self):
+    def _ospl_platform(self):
         arch = self.settings.arch.value.lower()
         if self.settings.os == "Windows":
             system = "win64" if arch == "x86_64" else "win32"
         else:
             system = self.settings.os.value.lower()
-        config = "debug" if self.settings.build_type == "Debug" else "release"
-        return "{}.{}-{}".format(arch, system, config)
+        return arch + "." + system
 
     def build_requirements(self):
         if self.settings.os == "Windows":
@@ -41,18 +40,20 @@ class OpenSplice(ConanFile):
         os.rename("opensplice-" + revision, self._source_subfolder)
 
     def build(self):
+        config = "debug" if self.settings.build_type == "Debug" else "release"
         with tools.vcvars(self.settings):
             self.run(
                 "bash {} {} {} {} {}".format(
                     self._buildscript,
                     self._source_subfolder,
-                    self._ospl_target,
+                    self._ospl_platform + "-" + config,
                     tools.cpu_count(),
                     "MSVC" if self.settings.compiler == "Visual Studio" else ""),
                 win_bash=(self.settings.os == "Windows"))
 
     def package(self):
-        srcDir = os.path.join(self._source_subfolder, "install", "HDE", self._ospl_target)
+        suffix = "-debug" if self.settings.build_type == "Debug" else ""
+        srcDir = os.path.join(self._source_subfolder, "install", "HDE", self._ospl_platform + suffix)
         self.copy("*", dst="include", src=os.path.join(srcDir, "include"))
         self.copy("*", dst="bin", src=os.path.join(srcDir, "bin"))
         self.copy("*", dst="lib", src=os.path.join(srcDir, "lib"))
