@@ -1,0 +1,8 @@
+module Test
+{
+    struct Message
+    {
+       long payload;
+    };
+    #pragma keylist Message payload
+};
