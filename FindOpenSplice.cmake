@@ -48,24 +48,33 @@ function(OpenSplice_configure_targets config homeDir)
     set(suffix "_${configUpper}")
 
     if(NOT TARGET "OpenSplice::isocpp2")
+        add_library("OpenSplice::ddskernel" SHARED IMPORTED)
+        set_property(TARGET "OpenSplice::ddskernel" PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+            "${homeDir}/include"
+            "${homeDir}/include/sys")
         add_library("OpenSplice::isocpp2" SHARED IMPORTED)
         set_property(TARGET "OpenSplice::isocpp2" PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-            "${homeDir}/include"
-            "${homeDir}/include/sys"
             "${homeDir}/include/dcps/C++/isocpp2"
             "${homeDir}/include/dcps/C++/SACPP")
+        set_property(TARGET "OpenSplice::isocpp2" PROPERTY INTERFACE_LINK_LIBRARIES
+            "OpenSplice::ddskernel")
     endif()
+    set_property(TARGET "OpenSplice::ddskernel" APPEND PROPERTY IMPORTED_CONFIGURATIONS "${configUpper}")
     set_property(TARGET "OpenSplice::isocpp2" APPEND PROPERTY IMPORTED_CONFIGURATIONS "${configUpper}")
     if(WIN32)
+        set_target_properties("OpenSplice::ddskernel" PROPERTIES
+            IMPORTED_IMPLIB${SUFFIX} "${homeDir}/lib/ddskernel.lib"
+            IMPORTED_LOCATION${SUFFIX} "${homeDir}/bin/ddskernel.dll")
         set_target_properties("OpenSplice::isocpp2" PROPERTIES
             IMPORTED_IMPLIB${SUFFIX} "${homeDir}/lib/dcpsisocpp2.lib"
             IMPORTED_LOCATION${SUFFIX} "${homeDir}/bin/dcpsisocpp2.dll")
     else()
+        set_target_properties("OpenSplice::ddskernel" PROPERTIES
+            IMPORTED_LOCATION${SUFFIX} "${homeDir}/lib/libddskernel.so"
+            IMPORTED_NO_SONAME${SUFFIX} TRUE)
         set_target_properties("OpenSplice::isocpp2" PROPERTIES
             IMPORTED_LOCATION${SUFFIX} "${homeDir}/lib/libdcpsisocpp2.so"
             IMPORTED_NO_SONAME${SUFFIX} TRUE)
-        set_property(TARGET "OpenSplice::isocpp2" APPEND PROPERTY INTERFACE_LINK_LIBRARIES
-            $<$<CONFIG:${config}>:"ddskernel">)
     endif()
 endfunction()
 
@@ -133,6 +142,20 @@ if(OpenSplice_versionRelease OR OpenSplice_versionDebug)
     set(OpenSplice_LIBRARIES "OpenSplice::isocpp2")
     set(OpenSplice_IDLPP_BINARY "${OpenSplice_home}/bin/idlpp")
 
+    if(WIN32)
+        set(OpenSplice_idlpp_wrapper "${CMAKE_BINARY_DIR}/FindOpenSplice_idlpp_wrapper.bat")
+        file(WRITE "${OpenSplice_idlpp_wrapper}"
+            "${OpenSplice_home}/release.bat && \"${OpenSplice_IDLPP_BINARY}\" %*")
+    else()
+        file(WRITE "${CMAKE_BINARY_DIR}/FindOpenSplice_tmp/FindOpenSplice_idlpp_wrapper"
+            "#!/bin/bash\nsource \"${OpenSplice_home}/release.com\" && \"${OpenSplice_IDLPP_BINARY}\" \"$@\"")
+        file(COPY "${CMAKE_BINARY_DIR}/FindOpenSplice_tmp/FindOpenSplice_idlpp_wrapper"
+            DESTINATION "${CMAKE_BINARY_DIR}"
+            FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
+        file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/FindOpenSplice_tmp")
+        set(OpenSplice_idlpp_wrapper "${CMAKE_BINARY_DIR}/FindOpenSplice_idlpp_wrapper")
+    endif()
+
     function(OpenSplice_generate_isocpp2 idlFile outputDir sourceFilesVar)
         get_filename_component(baseName "${idlFile}" NAME_WE)
         set(sourceFiles
@@ -141,20 +164,9 @@ if(OpenSplice_versionRelease OR OpenSplice_versionDebug)
             "${outputDir}/${baseName}SplDcps.cpp"
             "${outputDir}/${baseName}SplDcps.h"
             "${outputDir}/${baseName}_DCPS.hpp")
-        
-        if(WIN32)
-            set(shell "cmd.exe")
-            set(shellSwitch "/C")
-            set(envCommand "\"${OpenSplice_home}/release.bat\"")
-        else()
-            set(shell "bash")
-            set(shellSwitch "-c")
-            set(envCommand "source \"${OpenSplice_home}/release.com\"")
-        endif()
-        set(idlppCommand "\"${OpenSplice_IDLPP_BINARY}\" -S -l isocpp2 -d \"${outputDir}\" \"${idlFile}\"")
         add_custom_command(
             OUTPUT ${sourceFiles}
-            COMMAND "${shell}" "${shellSwitch}" "${envCommand} && ${idlppCommand}"
+            COMMAND "${OpenSplice_idlpp_wrapper}" "-S" "-l" "isocpp2" "-d" "${outputDir}" "${idlFile}"
             MAIN_DEPENDENCY "${idlFile}"
             VERBATIM)
         set(${sourceFilesVar} ${sourceFiles} PARENT_SCOPE)
