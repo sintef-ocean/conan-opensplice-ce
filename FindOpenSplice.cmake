@@ -145,10 +145,10 @@ if(OpenSplice_versionRelease OR OpenSplice_versionDebug)
     if(WIN32)
         set(OpenSplice_idlpp_wrapper "${CMAKE_BINARY_DIR}/FindOpenSplice_idlpp_wrapper.bat")
         file(WRITE "${OpenSplice_idlpp_wrapper}"
-            "${OpenSplice_home}/release.bat && \"${OpenSplice_IDLPP_BINARY}\" %*")
+            "${OpenSplice_home}/release.bat && \"${OpenSplice_IDLPP_BINARY}\" %*\n")
     else()
         file(WRITE "${CMAKE_BINARY_DIR}/FindOpenSplice_tmp/FindOpenSplice_idlpp_wrapper"
-            "#!/bin/bash\nsource \"${OpenSplice_home}/release.com\" && \"${OpenSplice_IDLPP_BINARY}\" \"$@\"")
+            "#!/bin/bash\nsource \"${OpenSplice_home}/release.com\" && \"${OpenSplice_IDLPP_BINARY}\" \"$@\"\n")
         file(COPY "${CMAKE_BINARY_DIR}/FindOpenSplice_tmp/FindOpenSplice_idlpp_wrapper"
             DESTINATION "${CMAKE_BINARY_DIR}"
             FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
