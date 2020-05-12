@@ -1,3 +1,4 @@
+#!/bin/bash
 # Usage: build-opensplice.sh <src_dir> <config> <cpus> [<toolchain>]
 #
 # <src_dir>   = OSPL source directory
