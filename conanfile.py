@@ -9,7 +9,6 @@ class OpenSpliceConan(ConanFile):
     description = "Vortex OpenSplice Community Edition, an open-source implementation of the OMG DDS standard"
     homepage = "https://github.com/ADLINK-IST/opensplice"
     url = "https://github.com/sintef-ocean/conan-opensplice.git"
-    license = "Apache-2.0"
     author = "SINTEF Ocean"
 
     settings = "os", "compiler", "build_type", "arch"
