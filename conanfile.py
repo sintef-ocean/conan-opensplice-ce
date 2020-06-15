@@ -10,6 +10,7 @@ class OpenSpliceConan(ConanFile):
     homepage = "https://github.com/ADLINK-IST/opensplice"
     url = "https://github.com/sintef-ocean/conan-opensplice.git"
     author = "SINTEF Ocean"
+    topics = ("dds", "opensplice", "publish-subscribe", "pub-sub", "communication")
 
     settings = "os", "compiler", "build_type", "arch"
     default_options = {
