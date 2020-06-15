@@ -4,7 +4,7 @@ import os, subprocess
 
 class OpenSpliceConan(ConanFile):
     name = "opensplice-ce"
-    version = "6.9.190705"
+    version = "6.9.190925"
     license = "Apache-2.0"
     description = "Vortex OpenSplice Community Edition, an open-source implementation of the OMG DDS standard"
     homepage = "https://github.com/ADLINK-IST/opensplice"
