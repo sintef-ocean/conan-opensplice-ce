@@ -11,7 +11,7 @@ class OpenSpliceTestConan(ConanFile):
         cmake.build()
 
     def test(self):
-        if self.settings.os == "Windows":
-            self.run("activate.bat && bin\\test.exe")
+        if self.settings.compiler == "Visual Studio":
+            self.run("activate.bat && " + str(self.settings.build_type) + "\\test.exe")
         else:
-            self.run(". ./activate.sh && bin/test")
+            self.run(". ./activate.sh && ./test")
