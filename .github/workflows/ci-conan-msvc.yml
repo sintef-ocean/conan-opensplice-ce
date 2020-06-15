@@ -10,7 +10,6 @@ env:
   CONAN_PASSWORD_SINTEF: ${{ secrets.BINTRAY_API_KEY }}
   CONAN_LOGIN_USERNAME_SINTEF: ${{ secrets.BINTRAY_USER }}
   CONAN_NON_INTERACTIVE: True
-  CONAN_USE_ALWAYS_SHORT_PATHS: True
 
 jobs:
   conan-with-msvc:
