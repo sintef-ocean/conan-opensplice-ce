@@ -6,7 +6,7 @@ on: [push]
 env:
   SINTEF_REFERENCE: "opensplice-ce*"
   SINTEF_CONAN_CLASS: "OpenSpliceConan"
-  CONAN_UPLOAD: "https://api.bintray.com/conan/sintef-ocean/conan-opensplice-ce"
+  CONAN_UPLOAD: "https://api.bintray.com/conan/sintef-ocean/conan"
   CONAN_PASSWORD_SINTEF: ${{ secrets.BINTRAY_API_KEY }}
   CONAN_LOGIN_USERNAME_SINTEF: ${{ secrets.BINTRAY_USER }}
   CONAN_NON_INTERACTIVE: True
