@@ -4,6 +4,7 @@
 #
 # IMPORTED targets:
 #
+#     OpenSplice::isocpp
 #     OpenSplice::isocpp2
 #
 # Variables:
@@ -52,6 +53,12 @@ function(OpenSplice_configure_targets config homeDir)
         set_property(TARGET "OpenSplice::ddskernel" PROPERTY INTERFACE_INCLUDE_DIRECTORIES
             "${homeDir}/include"
             "${homeDir}/include/sys")
+        add_library("OpenSplice::isocpp" SHARED IMPORTED)
+        set_property(TARGET "OpenSplice::isocpp" PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+            "${homeDir}/include/dcps/C++/isocpp"
+            "${homeDir}/include/dcps/C++/SACPP")
+        set_property(TARGET "OpenSplice::isocpp" PROPERTY INTERFACE_LINK_LIBRARIES
+            "OpenSplice::ddskernel")
         add_library("OpenSplice::isocpp2" SHARED IMPORTED)
         set_property(TARGET "OpenSplice::isocpp2" PROPERTY INTERFACE_INCLUDE_DIRECTORIES
             "${homeDir}/include/dcps/C++/isocpp2"
@@ -60,17 +67,24 @@ function(OpenSplice_configure_targets config homeDir)
             "OpenSplice::ddskernel")
     endif()
     set_property(TARGET "OpenSplice::ddskernel" APPEND PROPERTY IMPORTED_CONFIGURATIONS "${configUpper}")
+    set_property(TARGET "OpenSplice::isocpp" APPEND PROPERTY IMPORTED_CONFIGURATIONS "${configUpper}")
     set_property(TARGET "OpenSplice::isocpp2" APPEND PROPERTY IMPORTED_CONFIGURATIONS "${configUpper}")
     if(WIN32)
         set_target_properties("OpenSplice::ddskernel" PROPERTIES
             IMPORTED_IMPLIB${SUFFIX} "${homeDir}/lib/ddskernel.lib"
             IMPORTED_LOCATION${SUFFIX} "${homeDir}/bin/ddskernel.dll")
+        set_target_properties("OpenSplice::isocpp" PROPERTIES
+            IMPORTED_IMPLIB${SUFFIX} "${homeDir}/lib/dcpsisocpp.lib"
+            IMPORTED_LOCATION${SUFFIX} "${homeDir}/bin/dcpsisocpp.dll")
         set_target_properties("OpenSplice::isocpp2" PROPERTIES
             IMPORTED_IMPLIB${SUFFIX} "${homeDir}/lib/dcpsisocpp2.lib"
             IMPORTED_LOCATION${SUFFIX} "${homeDir}/bin/dcpsisocpp2.dll")
     else()
         set_target_properties("OpenSplice::ddskernel" PROPERTIES
             IMPORTED_LOCATION${SUFFIX} "${homeDir}/lib/libddskernel.so"
+            IMPORTED_NO_SONAME${SUFFIX} TRUE)
+        set_target_properties("OpenSplice::isocpp" PROPERTIES
+            IMPORTED_LOCATION${SUFFIX} "${homeDir}/lib/libdcpsisocpp.so"
             IMPORTED_NO_SONAME${SUFFIX} TRUE)
         set_target_properties("OpenSplice::isocpp2" PROPERTIES
             IMPORTED_LOCATION${SUFFIX} "${homeDir}/lib/libdcpsisocpp2.so"
@@ -155,6 +169,22 @@ if(OpenSplice_versionRelease OR OpenSplice_versionDebug)
         file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/FindOpenSplice_tmp")
         set(OpenSplice_idlpp_wrapper "${CMAKE_BINARY_DIR}/FindOpenSplice_idlpp_wrapper")
     endif()
+
+    function(OpenSplice_generate_isocpp idlFile outputDir sourceFilesVar)
+        get_filename_component(baseName "${idlFile}" NAME_WE)
+        set(sourceFiles
+            "${outputDir}/${baseName}.cpp"
+            "${outputDir}/${baseName}.h"
+            "${outputDir}/${baseName}SplDcps.cpp"
+            "${outputDir}/${baseName}SplDcps.h"
+            "${outputDir}/${baseName}_DCPS.hpp")
+        add_custom_command(
+            OUTPUT ${sourceFiles}
+            COMMAND "${OpenSplice_idlpp_wrapper}" "-S" "-l" "isocpp" "-d" "${outputDir}" "${idlFile}"
+            MAIN_DEPENDENCY "${idlFile}"
+            VERBATIM)
+        set(${sourceFilesVar} ${sourceFiles} PARENT_SCOPE)
+    endfunction()
 
     function(OpenSplice_generate_isocpp2 idlFile outputDir sourceFilesVar)
         get_filename_component(baseName "${idlFile}" NAME_WE)

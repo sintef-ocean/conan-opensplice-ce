@@ -1,14 +1,14 @@
 #!/bin/bash
-# Usage: build-opensplice.sh <src_dir> <config> <cpus> [<toolchain>]
+# Usage: build-opensplice.sh <src_dir> <config> <cpus> [msvc]
 #
 # <src_dir>   = OSPL source directory
 # <config>    = OSPL config, e.g. "x86_64.linux-release"
 # <cpus>      = Max. number of parallel jobs
-# <toolchain> = "MSVC" or unspecified
+# "msvc"      = Toolchain is MSVC
 
 cd "$1"
 
-if [ "$4" = "MSVC" ]; then
+if [ "$4" = "msvc" ]; then
     export VS_HOME="$(cygpath "$VSINSTALLDIR")"
     export WINDOWSSDKDIR="$(cygpath "$WINDOWSSDKDIR")"
     unset tmp

@@ -1,3 +1,4 @@
 test_package/build
-tmp/
+*.pyc
 *.swp
+*.swo

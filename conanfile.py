@@ -2,13 +2,15 @@ from conans import ConanFile, tools
 import os, subprocess
 
 
-class OpenSplice(ConanFile):
-    name = "opensplice"
-    version = "6.9.190705-OSS"
+class OpenSpliceConan(ConanFile):
+    name = "opensplice-ce"
+    version = "6.9.190705"
     license = "Apache-2.0"
-    description = "Vortex OpenSplice Community Edition"
-    url = "https://stash.code.sintef.no/projects/MOVE/repos/conan-opensplice/browse"
+    description = "Vortex OpenSplice Community Edition, an open-source implementation of the OMG DDS standard"
     homepage = "https://github.com/ADLINK-IST/opensplice"
+    url = "https://github.com/sintef-ocean/conan-opensplice.git"
+    license = "Apache-2.0"
+    author = "SINTEF Ocean"
 
     settings = "os", "compiler", "build_type", "arch"
     default_options = {
@@ -16,10 +18,11 @@ class OpenSplice(ConanFile):
         "cygwin_installer:with_pear": False
     }
 
-    _buildscript = "build-opensplice.sh"
-    _findscript = "FindOpenSplice.cmake"
+    _build_script = "build-opensplice.sh"
+    _find_script = "FindOpenSplice.cmake"
     _source_subfolder = "source_subfolder"
-    exports_sources = [ _buildscript, _findscript ]
+
+    exports_sources = [ _build_script, _find_script ]
 
     @property
     def _ospl_platform(self):
@@ -35,7 +38,7 @@ class OpenSplice(ConanFile):
             self.build_requires("cygwin_installer/2.9.0@bincrafters/stable")
 
     def source(self):
-        revision = "OSPL_V" + self.version.replace(".", "_").replace("-", "") + "_RELEASE"
+        revision = "OSPL_V" + self.version.replace(".", "_") + "OSS_RELEASE"
         url = "https://github.com/ADLINK-IST/opensplice/archive/" + revision + ".tar.gz"
         tools.get(url)
         os.rename("opensplice-" + revision, self._source_subfolder)
@@ -45,11 +48,11 @@ class OpenSplice(ConanFile):
         with tools.vcvars(self.settings):
             self.run(
                 "bash {} {} {} {} {}".format(
-                    self._buildscript,
+                    self._build_script,
                     self._source_subfolder,
                     self._ospl_platform + "-" + config,
                     tools.cpu_count(),
-                    "MSVC" if self.settings.compiler == "Visual Studio" else ""),
+                    "msvc" if self.settings.compiler == "Visual Studio" else ""),
                 win_bash=(self.settings.os == "Windows"))
 
     def package(self):
@@ -60,7 +63,8 @@ class OpenSplice(ConanFile):
         self.copy("*", dst="lib", src=os.path.join(srcDir, "lib"))
         self.copy("*", dst="etc", src=os.path.join(srcDir, "etc"))
         self.copy("release.bat" if self.settings.os == "Windows" else "release.com", dst="", src=srcDir)
-        self.copy(self._findscript)
+        self.copy("LICENSE", dst="licenses", src=self._source_subfolder)
+        self.copy(self._find_script)
 
     def package_info(self):
         self.cpp_info.includedirs = [

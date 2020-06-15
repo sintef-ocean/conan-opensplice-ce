@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 3.11)
 project(test)
 
-include("${CMAKE_BINARY_DIR}/conanbuildinfo.cmake")
-conan_basic_setup()
+include("${CMAKE_BINARY_DIR}/conan_paths.cmake")
 find_package(OpenSplice REQUIRED)
 
 set(idlGenDir "${CMAKE_BINARY_DIR}/idlgen")
