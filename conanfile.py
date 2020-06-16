@@ -112,6 +112,7 @@ class OpenSpliceConan(ConanFile):
         self.copy("*", dst="bin", src=os.path.join(srcDir, "bin"))
         self.copy("*", dst="lib", src=os.path.join(srcDir, "lib"))
         self.copy("*", dst="etc", src=os.path.join(srcDir, "etc"))
+        self.copy("*", dst="share", src=os.path.join(srcDir, "tools"), keep_path=True)
         self.copy("release.bat" if self.settings.os == "Windows" else "release.com", dst="", src=srcDir)
         self.copy("LICENSE", dst="licenses", src=self._source_subfolder)
         self.copy(self._find_script)

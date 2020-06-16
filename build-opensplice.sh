@@ -19,6 +19,10 @@ if [ "$4" = "msvc" ]; then
     if [ $(which python) ]; then
         export PYTHON3_HOME=$(which python)
     fi
+
+    export DISTUTILS_USE_SDK=1
+    echo $WINDOWSSDKDIR
+
 fi
 
 OVERRIDE_INCLUDE_JAVA=no
