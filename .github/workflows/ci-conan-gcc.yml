@@ -50,6 +50,9 @@ jobs:
               sudo apt-get install gcc-6 g++-6 -y
               sudo ln -s /usr/bin/gcc-6 /usr/bin/gcc
               sudo ln -s /usr/bin/g++-6 /usr/bin/g++
+              sudo ln -s /usr/bin/gcc-ar-6 /usr/bin/gcc-ar
+              sudo ln -s /usr/bin/gcc-nm-6 /usr/bin/gcc-nm
+              sudo ln -s /usr/bin/gcc-ranlib-6 /usr/bin/gcc-ranlib
           fi
       - name: Configure Conan
         run: conan remote add sintef ${CONAN_UPLOAD} --insert 0
