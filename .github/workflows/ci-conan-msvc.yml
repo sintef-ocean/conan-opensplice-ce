@@ -39,7 +39,8 @@ jobs:
       - name: Update path
         shell: cmd
         run: |
-          setx PATH "C:\tools\cygwin;%PATH%"
+          setx PATH "C:\tools\cygwin\bin;%PATH%"
+          where bash
           set
       - name: Configure Conan
         run: conan remote add sintef ${env:CONAN_UPLOAD} --insert 0
