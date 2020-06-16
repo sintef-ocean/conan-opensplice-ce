@@ -45,15 +45,19 @@ class OpenSpliceConan(ConanFile):
 
     def build(self):
         config = "debug" if self.settings.build_type == "Debug" else "release"
+        env_vars = tools.vcvars_dict(self)
         with tools.vcvars(self.settings):
             self.run(
-                "bash {} {} {} {} {}".format(
+                "bash {} {} {} {} {} '{} '{}'".format(
                     self._build_script,
                     self._source_subfolder,
                     self._ospl_platform + "-" + config,
                     tools.cpu_count(),
-                    "msvc" if self.settings.compiler == "Visual Studio" else ""),
-                win_bash=(self.settings.os == "Windows"))
+                    "msvc" if self.settings.compiler == "Visual Studio" else "",
+                    ),
+                env_vars["VSINSTALLDIR"],
+                env_vars["WindowsSdkDir"],
+                subsystem=("cygwin" if self.settings.os == "Windows" else None))
 
     def package(self):
         suffix = "-debug" if self.settings.build_type == "Debug" else ""

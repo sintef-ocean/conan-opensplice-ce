@@ -34,7 +34,8 @@ jobs:
           pip3 install conan requests
           pip3 install conan_package_tools
           choco install cygwin
-          choco install wget
+          choco install cyg-get
+          cyg-get git perl bison flex gawk zip unzip
       - name: Configure Conan
         run: conan remote add sintef ${env:CONAN_UPLOAD} --insert 0
       - name: Conan create

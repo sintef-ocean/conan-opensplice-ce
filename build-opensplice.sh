@@ -9,8 +9,8 @@
 cd "$1"
 
 if [ "$4" = "msvc" ]; then
-    export VS_HOME="$(cygpath "$VSINSTALLDIR")"
-    export WINDOWSSDKDIR="$(cygpath "$WINDOWSSDKDIR")"
+    export VS_HOME="$(cygpath "$5")"
+    export WINDOWSSDKDIR="$(cygpath "$6")"
     unset tmp
     unset temp
     unset TMP
