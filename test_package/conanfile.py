@@ -12,6 +12,6 @@ class OpenSpliceTestConan(ConanFile):
 
     def test(self):
         if self.settings.compiler == "Visual Studio":
-            self.run("activate.bat && " + str(self.settings.build_type) + "\\test.exe")
+            self.run("activate.bat && " + str(self.settings.build_type) + "\\test_prog.exe")
         else:
-            self.run(". ./activate.sh && ./test")
+            self.run(". ./activate.sh && ./test_prog")
