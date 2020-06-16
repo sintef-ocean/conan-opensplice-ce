@@ -54,7 +54,7 @@ class OpenSpliceConan(ConanFile):
         if self.settings.os == "Windows":
             env_vars = tools.vcvars_dict(self)
             with tools.vcvars(self.settings):
-                self.run("bash {} {} {} {} {} '{} '{}'".format(
+                self.run("bash {} {} {} {} {} '{}' '{}'".format(
                     self._build_script,
                     self._source_subfolder,
                     self._ospl_platform + "-" + config,
