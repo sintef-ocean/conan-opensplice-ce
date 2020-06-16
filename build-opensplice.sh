@@ -21,5 +21,6 @@ OVERRIDE_INCLUDE_JAVA=no
 OVERRIDE_INCLUDE_CS=no
 OVERRIDE_INCLUDE_ORB=no
 export OSPL_DOCS=none
+export OSPL_USE_CXX11=yes
 
 source configure "$2" && make -j$3 && make install
