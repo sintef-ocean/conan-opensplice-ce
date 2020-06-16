@@ -44,6 +44,8 @@ jobs:
           sudo apt-get install bison flex
           sudo apt-get remove '*jdk*'
           if [ ${{ matrix.compiler_version }} -eq 6 ]; then
+              sudo pip3 uninstall cython
+              echo "uninstalled cython to disable python DCPS API"
               sudo add-apt-repository ppa:ubuntu-toolchain-r/test
               sudo apt-get update
               sudo apt-get remove gcc-7 g++7 gcc-8 g++8 gcc-9 g++9 -y
