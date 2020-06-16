@@ -18,7 +18,7 @@ jobs:
     env:
       CONAN_USER_HOME_SHORT: C:\c
       CONAN_USE_ALWAYS_SHORT_PATHS: 1
-      CONAN_BASH_PATH: C:\tools\cygwin\bin
+      CONAN_BASH_PATH: C:\tools\cygwin\bin\bash.exe
     strategy:
       fail-fast: false
       matrix:
