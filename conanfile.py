@@ -1,5 +1,6 @@
 from conans import ConanFile, tools
-import os, subprocess
+import os
+import subprocess
 
 
 class OpenSpliceConan(ConanFile):
@@ -43,21 +44,31 @@ class OpenSpliceConan(ConanFile):
         tools.get(url)
         os.rename("opensplice-" + revision, self._source_subfolder)
 
+        tools.replace_in_file(os.path.join(self._source_subfolder, 'setup', 'x86_64.linux-default.mak'),
+                              'c++0x', 'c++11')
+
     def build(self):
         config = "debug" if self.settings.build_type == "Debug" else "release"
-        env_vars = tools.vcvars_dict(self)
-        with tools.vcvars(self.settings):
-            self.run(
-                "bash {} {} {} {} {} '{} '{}'".format(
+        if self.settings.os == "Windows":
+            env_vars = tools.vcvars_dict(self)
+            with tools.vcvars(self.settings):
+                self.run("bash {} {} {} {} {} '{} '{}'".format(
                     self._build_script,
                     self._source_subfolder,
                     self._ospl_platform + "-" + config,
                     tools.cpu_count(),
                     "msvc" if self.settings.compiler == "Visual Studio" else "",
-                    ),
-                env_vars["VSINSTALLDIR"],
-                env_vars["WindowsSdkDir"],
-                subsystem=("cygwin" if self.settings.os == "Windows" else None))
+                    env_vars["VSINSTALLDIR"],
+                    env_vars["WindowsSdkDir"]),
+                         win_bash=True,
+                         subsystem="cygwin")
+        else:
+            self.run("bash {} {} {} {} {}".format(
+                self._build_script,
+                self._source_subfolder,
+                self._ospl_platform + "-" + config,
+                tools.cpu_count(),
+                "msvc" if self.settings.compiler == "Visual Studio" else ""))
 
     def package(self):
         suffix = "-debug" if self.settings.build_type == "Debug" else ""
