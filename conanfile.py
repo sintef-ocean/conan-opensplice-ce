@@ -1,5 +1,6 @@
 from conans import ConanFile, tools
 import os
+import shutil
 import subprocess
 
 
@@ -32,7 +33,13 @@ class OpenSpliceConan(ConanFile):
             system = "win64" if arch == "x86_64" else "win32"
         else:
             system = self.settings.os.value.lower()
-        return arch + "." + system
+
+        if self.settings.compiler == "clang":
+            extra = "_clang"
+        else:
+            extra = ""
+
+        return arch + "." + system + extra
 
     def build_requirements(self):
         if self.settings.os == "Windows" and False:
@@ -44,13 +51,39 @@ class OpenSpliceConan(ConanFile):
         tools.get(url)
         os.rename("opensplice-" + revision, self._source_subfolder)
 
-        tools.replace_in_file(os.path.join(self._source_subfolder, 'setup', 'x86_64.linux-default.mak'),
+        tools.replace_in_file(os.path.join(self._source_subfolder, 'setup',
+                                           'x86_64.linux-default.mak'),
                               'c++0x', 'c++11')
-        tools.replace_in_file(os.path.join(self._source_subfolder, 'setup', 'x86_64.linux_clang-default.mak'),
+        tools.replace_in_file(os.path.join(self._source_subfolder, 'setup',
+                                           'x86_64.linux_clang-default.mak'),
                               'c++0x', 'c++11')
 
+        # add missing clang targets
+        clang_tgt = 'x86_64.linux_clang-release'
+
+        environ_path = os.path.join(
+            self._source_subfolder, 'setup', 'environment')
+        shutil.copy(os.path.join(environ_path, 'x86_64.linux-release'),
+                    os.path.join(environ_path, clang_tgt))
+
+        tools.replace_in_file(os.path.join(environ_path, clang_tgt),
+                              'x86_64.linux-release',
+                              clang_tgt)
+
+        clang_path = os.path.join(self._source_subfolder, 'setup', clang_tgt)
+        os.makedirs(clang_path)
+        shutil.copy(os.path.join(self._source_subfolder,
+                                 'setup',
+                                 'x86_64.linux-release',
+                                 'config.mak'),
+                    os.path.join(clang_path, 'config.mak'))
+        tools.replace_in_file(os.path.join(clang_path, 'config.mak'),
+                              '-default', '_clang-default')
+        tools.replace_in_file(os.path.join(clang_path, 'config.mak'),
+                              '$(CFLAGS_LTO)', '')
+
     def build(self):
-        config = "debug" if self.settings.build_type == "Debug" else "release"
+        config = "dev" if self.settings.build_type == "Debug" else "release"
         if self.settings.os == "Windows":
             env_vars = tools.vcvars_dict(self)
             with tools.vcvars(self.settings):
@@ -73,7 +106,7 @@ class OpenSpliceConan(ConanFile):
                 "msvc" if self.settings.compiler == "Visual Studio" else ""))
 
     def package(self):
-        suffix = "-debug" if self.settings.build_type == "Debug" else ""
+        suffix = "-dev" if self.settings.build_type == "Debug" else ""
         srcDir = os.path.join(self._source_subfolder, "install", "HDE", self._ospl_platform + suffix)
         self.copy("*", dst="include", src=os.path.join(srcDir, "include"))
         self.copy("*", dst="bin", src=os.path.join(srcDir, "bin"))

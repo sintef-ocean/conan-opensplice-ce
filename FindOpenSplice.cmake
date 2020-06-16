@@ -106,10 +106,15 @@ if(WIN32)
         set(OpenSplice_config "x86.win32")
     endif()
 else()
+
+    if("${CMAKE_CXX_COMPILER}" MATCHES ".*clang.*")
+        set(suffx "_clang")
+    endif()
+
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-	    set(OpenSplice_config "x86_64.linux")
+        set(OpenSplice_config "x86_64.linux${suffx}")
     else()
-	    set(OpenSplice_config "x86.linux")
+        set(OpenSplice_config "x86.linux")
     endif()
 endif(WIN32)
 
@@ -129,12 +134,12 @@ find_path(OpenSplice_HOME_DEBUG
     HINTS
         "${OSPL_HOME}"
     PATH_SUFFIXES
-        "${OpenSplice_config}-debug"
-        "OpenSplice/${OpenSplice_config}-debug"
+        "${OpenSplice_config}-dev"
+        "OpenSplice/${OpenSplice_config}-dev"
 )
 mark_as_advanced(OpenSplice_HOME_DEBUG)
 OpenSplice_check_dir("${OpenSplice_HOME_RELEASE}" "${OpenSplice_config}" OpenSplice_versionRelease)
-OpenSplice_check_dir("${OpenSplice_HOME_DEBUG}" "${OpenSplice_config}-debug" OpenSplice_versionDebug)
+OpenSplice_check_dir("${OpenSplice_HOME_DEBUG}" "${OpenSplice_config}-dev" OpenSplice_versionDebug)
 
 if(OpenSplice_versionRelease OR OpenSplice_versionDebug)
     if(OpenSplice_versionRelease)
