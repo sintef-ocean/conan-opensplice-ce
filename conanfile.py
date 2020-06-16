@@ -46,6 +46,8 @@ class OpenSpliceConan(ConanFile):
 
         tools.replace_in_file(os.path.join(self._source_subfolder, 'setup', 'x86_64.linux-default.mak'),
                               'c++0x', 'c++11')
+        tools.replace_in_file(os.path.join(self._source_subfolder, 'setup', 'x86_64.linux_clang-default.mak'),
+                              'c++0x', 'c++11')
 
     def build(self):
         config = "debug" if self.settings.build_type == "Debug" else "release"
@@ -60,7 +62,6 @@ class OpenSpliceConan(ConanFile):
                     "msvc" if self.settings.compiler == "Visual Studio" else "",
                     env_vars["VSINSTALLDIR"],
                     env_vars["WindowsSdkDir"]),
-                         win_bash=True,
                          subsystem="cygwin")
         else:
             self.run("bash {} {} {} {} {}".format(

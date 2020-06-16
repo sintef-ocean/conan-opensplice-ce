@@ -48,8 +48,8 @@ jobs:
               sudo apt-get update
               sudo apt-get remove gcc-7 g++7 gcc-8 g++8 gcc-9 g++9 -y
               sudo apt-get install gcc-6 g++-6 -y
-              ln -s /usr/bin/gcc-6 /usr/bin/gcc
-              ln -s /usr/bin/g++-6 /usr/bin/g++
+              sudo ln -s /usr/bin/gcc-6 /usr/bin/gcc
+              sudo ln -s /usr/bin/g++-6 /usr/bin/g++
           fi
       - name: Configure Conan
         run: conan remote add sintef ${CONAN_UPLOAD} --insert 0
