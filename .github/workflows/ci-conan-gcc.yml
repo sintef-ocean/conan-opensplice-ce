@@ -46,7 +46,9 @@ jobs:
           if [ ${{ matrix.compiler_version }} -eq 6 ]; then
               sudo add-apt-repository ppa:ubuntu-toolchain-r/test
               sudo apt-get update
+              sudo apt-get remove gcc-7 g++7 gcc-8 g++8 gcc-9 g++9 -y
               sudo apt-get install gcc-6 g++-6 -y
+
           fi
       - name: Configure Conan
         run: conan remote add sintef ${CONAN_UPLOAD} --insert 0
