@@ -34,7 +34,7 @@ class OpenSpliceConan(ConanFile):
         return arch + "." + system
 
     def build_requirements(self):
-        if self.settings.os == "Windows":
+        if self.settings.os == "Windows" and False:
             self.build_requires("cygwin_installer/2.9.0@bincrafters/stable")
 
     def source(self):

@@ -33,6 +33,10 @@ jobs:
           pip3 install --upgrade setuptools pip
           pip3 install conan requests
           pip3 install conan_package_tools
+          choco install cygwin
+          choco install cyg-get
+          cyg-get pkg-config make libtool binutils autoconf automake gettext `
+            curl git perl bison flex gawk zip unzip
       - name: Configure Conan
         run: conan remote add sintef ${env:CONAN_UPLOAD} --insert 0
       - name: Conan create
