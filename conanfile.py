@@ -62,6 +62,7 @@ class OpenSpliceConan(ConanFile):
                     "msvc" if self.settings.compiler == "Visual Studio" else "",
                     env_vars["VSINSTALLDIR"],
                     env_vars["WindowsSdkDir"]),
+                         win_bash=True,
                          subsystem="cygwin")
         else:
             self.run("bash {} {} {} {} {}".format(
