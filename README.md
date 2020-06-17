@@ -77,4 +77,8 @@ cyg-get gcc-core make git perl bison flex gawk zip unzip
 ```
 
 You may also need to specify the path for cygwin bash to help Conan,
-e.g. in =cmd=: `set CONAN_BASH_PATH="C:\tools\cygwin\bin\bash.exe"`
+e.g. in `cmd`: `set CONAN_BASH_PATH="C:\tools\cygwin\bin\bash.exe"`
+
+**Note**: The OpenSplice targets for Windows on github workflows are all built with
+toolset v142 because this is what OpenSplice's build system detects. Nevertheless, the
+test_package are built with v141 and succeeds.
