@@ -1,10 +1,12 @@
-[_![MSVC Conan](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/MSVC%20Conan/badge.svg)_](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A%22MSVC+Conan%22)
-[_![GCC Conan](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/GCC%20Conan/badge.svg)_](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A%22GCC+Conan%22)
-[_![Clang Conan](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/Clang%20Conan/badge.svg)_](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A%22Clang+Conan%22)
-[ ![Download](https://api.bintray.com/packages/sintef-ocean/conan/opensplice-ce%3Asintef/images/download.svg) ](https://bintray.com/sintef-ocean/conan/opensplice-ce%3Asintef/_latestVersion)
+[![GCC Conan](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/GCC%20Conan/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"GCC+Conan")
+[![Clang Conan](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/Clang%20Conan/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"Clang+Conan")
+[![MSVC Conan](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/MSVC%20Conan/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"MSVC+Conan")
+[![Download](https://api.bintray.com/packages/sintef-ocean/conan/opensplice-ce%3Asintef/images/download.svg)](https://bintray.com/sintef-ocean/conan/opensplice-ce%3Asintef/_latestVersion)
 
 
-The recipe generates library packages, which can be found at [Bintray](https://bintray.com/sintef-ocean/conan/opensplice-ce%3Asintef/_latestVersion).
+[Conan.io](https://conan.io) recipe for [opensplice-ce](https://github.com/ADLINK-IST/opensplice).
+
+The recipe generates library packages, which can be found at [Bintray](https://bintray.com/sintef-ocean/conan/opensplice-ce%3Asintef).
 The package is usually consumed using the `conan install` command or a *conanfile.txt*.
 
 ## How to use this package
@@ -19,6 +21,8 @@ The package is usually consumed using the `conan install` command or a *conanfil
 
    Add a [*conanfile.txt*](http://docs.conan.io/en/latest/reference/conanfile_txt.html) to your project. This file describes dependencies and your configuration of choice, e.g.:
 
+**Note Windows users**: See _Known recipe issues_ below.
+
    ```
    [requires]
    opensplice-ce/[>=6.9]@sintef/stable
@@ -28,7 +32,7 @@ The package is usually consumed using the `conan install` command or a *conanfil
 
    [generators]
    cmake_paths
-   cmake_find_package
+   virtualenv
    ```
 
    Insert into your *CMakeLists.txt* something like the following lines:
@@ -59,4 +63,18 @@ The package is usually consumed using the `conan install` command or a *conanfil
 
 ## Known recipe issues
 
-None
+**Note**: You need [Cygwin](https://www.cygwin.com/) to build this
+package. Currently, this recipe does not install it for you, so you need
+to install it manually. The following additional Cygwin packages are
+needed: `gcc-core, make, git, perl, bison, flex, gawk, zip, unzip`. If
+you have [Chocolatey](https://chocolatey.org/%20) installed you can run
+the following commands:
+
+``` shell
+choco install cygwin
+choco install cyg-get
+cyg-get gcc-core make git perl bison flex gawk zip unzip
+```
+
+You may also need to specify the path for cygwin bash to help Conan,
+e.g. in =cmd=: `set CONAN_BASH_PATH="C:\tools\cygwin\bin\bash.exe"`

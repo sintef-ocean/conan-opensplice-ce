@@ -16,7 +16,7 @@ class OpenSpliceConan(ConanFile):
 
     settings = "os", "compiler", "build_type", "arch"
     default_options = {
-        "cygwin_installer:additional_packages": "git,perl,bison,flex,gawk,zip,unzip",
+        "cygwin_installer:additional_packages": "gcc-core,make,git,perl,bison,flex,gawk,zip,unzip",
         "cygwin_installer:with_pear": False
     }
 
