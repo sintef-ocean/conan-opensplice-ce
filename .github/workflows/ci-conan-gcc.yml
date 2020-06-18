@@ -61,6 +61,7 @@ jobs:
       - name: Conan create
         run: |
           conan create -s build_type=${{ matrix.build_type }} \
+            -s arch_build=x86_64 \
             -s compiler.version=${{ matrix.compiler_version }} \
             -s compiler.libcxx=libstdc++11 \
             -b missing -b outdated . sintef/stable
