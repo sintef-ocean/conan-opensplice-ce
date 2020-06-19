@@ -8,7 +8,9 @@ class OpenSpliceConan(ConanFile):
     name = "opensplice-ce"
     version = "6.9.190925"
     license = "Apache-2.0"
-    description = "Vortex OpenSplice Community Edition, an open-source implementation of the OMG DDS standard"
+    description = \
+        "Vortex OpenSplice Community Edition, an open-source "\
+        "implementation of the OMG DDS standard"
     homepage = "https://github.com/ADLINK-IST/opensplice"
     url = "https://github.com/sintef-ocean/conan-opensplice.git"
     author = "SINTEF Ocean"
@@ -24,7 +26,7 @@ class OpenSpliceConan(ConanFile):
     _find_script = "FindOpenSplice.cmake"
     _source_subfolder = "source_subfolder"
 
-    exports_sources = [ _build_script, _find_script ]
+    exports_sources = [_build_script, _find_script]
 
     @property
     def _ospl_platform(self):
