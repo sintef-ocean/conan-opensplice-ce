@@ -18,7 +18,8 @@ class OpenSpliceConan(ConanFile):
 
     settings = "os", "compiler", "build_type", "arch"
     default_options = {
-        "cygwin_installer:additional_packages": "gcc-core,make,git,perl,bison,flex,gawk,zip,unzip",
+        "cygwin_installer:additional_packages":
+        "gcc-core,make,git,perl,bison,flex,gawk,zip,unzip",
         "cygwin_installer:with_pear": False
     }
 
@@ -49,7 +50,8 @@ class OpenSpliceConan(ConanFile):
 
     def source(self):
         revision = "OSPL_V" + self.version.replace(".", "_") + "OSS_RELEASE"
-        url = "https://github.com/ADLINK-IST/opensplice/archive/" + revision + ".tar.gz"
+        url = "https://github.com/ADLINK-IST/opensplice/archive/" \
+            + revision + ".tar.gz"
         tools.get(url)
         os.rename("opensplice-" + revision, self._source_subfolder)
 
@@ -109,13 +111,16 @@ class OpenSpliceConan(ConanFile):
 
     def package(self):
         suffix = "-dev" if self.settings.build_type == "Debug" else ""
-        srcDir = os.path.join(self._source_subfolder, "install", "HDE", self._ospl_platform + suffix)
+        srcDir = os.path.join(self._source_subfolder, "install", "HDE",
+                              self._ospl_platform + suffix)
         self.copy("*", dst="include", src=os.path.join(srcDir, "include"))
         self.copy("*", dst="bin", src=os.path.join(srcDir, "bin"))
         self.copy("*", dst="lib", src=os.path.join(srcDir, "lib"))
         self.copy("*", dst="etc", src=os.path.join(srcDir, "etc"))
-        self.copy("*", dst="share", src=os.path.join(srcDir, "tools"), keep_path=True)
-        self.copy("release.bat" if self.settings.os == "Windows" else "release.com", dst="", src=srcDir)
+        self.copy("*", dst="share", src=os.path.join(srcDir, "tools"),
+                  keep_path=True)
+        self.copy("release.bat" if self.settings.os == "Windows"
+                  else "release.com", dst="", src=srcDir)
         self.copy("LICENSE", dst="licenses", src=self._source_subfolder)
         self.copy(self._find_script)
 
@@ -131,9 +136,12 @@ class OpenSpliceConan(ConanFile):
             "dcpsisocpp2",
             "dcpssacpp"
         ]
-        self.env_info.PATH.append(os.path.join(self.package_folder, "bin"))
-        self.env_info.LD_LIBRARY_PATH.append(os.path.join(self.package_folder, "lib"))
-        self.env_info.DYLD_LIBRARY_PATH.append(os.path.join(self.package_folder, "lib"))
+        self.env_info.PATH.append(
+            os.path.join(self.package_folder, "bin"))
+        self.env_info.LD_LIBRARY_PATH.append(
+            os.path.join(self.package_folder, "lib"))
+        self.env_info.DYLD_LIBRARY_PATH.append(
+            os.path.join(self.package_folder, "lib"))
 
         # Extract OSPL_* environment variables from release script and add them
         # to self.env_info
@@ -141,7 +149,8 @@ class OpenSpliceConan(ConanFile):
             envCmd = ["cmd.exe", "/C", "release.bat && set"]
         else:
             envCmd = ["bash", "-c", "source release.com && env"]
-        proc = subprocess.run(envCmd, stdout=subprocess.PIPE, check=True, universal_newlines=True)
+        proc = subprocess.run(envCmd, stdout=subprocess.PIPE, check=True,
+                              universal_newlines=True)
         for line in proc.stdout.split('\n'):
             pair = line.split('=', 1)
             if len(pair) == 2 and pair[0].startswith("OSPL_"):
