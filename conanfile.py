@@ -89,11 +89,11 @@ class OpenSpliceConan(ConanFile):
         shutil.copy(os.path.join(self._source_subfolder,
                                  'setup',
                                  'configuration',
-                                 'x86_64.linux'),
+                                 'setup_x86_64.linux'),
                     os.path.join(self._source_subfolder,
                                  'setup',
                                  'configuration',
-                                 'x86_64.linux_clang'))
+                                 'setup_x86_64.linux_clang'))
 
     def build(self):
         config = "dev" if self.settings.build_type == "Debug" else "release"
