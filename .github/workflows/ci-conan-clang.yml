@@ -13,8 +13,8 @@ env:
   CONAN_USE_ALWAYS_SHORT_PATHS: True
 
 jobs:
-  conan-with-dockerfile:
-    name: Conan from scratch
+  conan-with-clang:
+    name: Conan
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -46,42 +46,6 @@ jobs:
           conan create -s build_type=${{ matrix.build_type }} \
             -s compiler.version=${{ matrix.compiler_version }} \
             -s compiler=clang \
-            -s compiler.libcxx=libstdc++11 \
-            -b missing -b outdated . sintef/stable
-      - name: Conan upload
-        run: |
-          conan upload --all -c -r sintef ${SINTEF_REFERENCE} --retry 10 --retry-wait 20 --force
-      - name: Bintray info
-        run: |
-          python3 bintray.py ${SINTEF_CONAN_CLASS} \
-            ${CONAN_LOGIN_USERNAME_SINTEF} ${CONAN_PASSWORD_SINTEF}
-  conan-with-clang:
-    name: Conan
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        compiler_version: [8]
-        build_type: [Debug, Release]
-        os: [ubuntu-20.04]
-    container:
-      image: conanio/clang${{ matrix.compiler_version }}
-      options: -u 0
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install prerequisites
-        run: |
-          sudo apt-get update
-          sudo pip3 install --upgrade setuptools pip cython wheel
-          sudo pip3 install conan requests
-          sudo apt-get install -y bison flex gawk
-          sudo apt-get remove -y '*jdk*'
-      - name: Configure Conan
-        run: conan remote add sintef ${CONAN_UPLOAD} --insert 0
-      - name: Conan create
-        run: |
-          conan create -s build_type=${{ matrix.build_type }} \
-            -s compiler.version=${{ matrix.compiler_version }} \
             -s compiler.libcxx=libstdc++11 \
             -b missing -b outdated . sintef/stable
       - name: Conan upload
