@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        compiler_version: [6, 7, 8, 9]
+        compiler_version: [63, 7, 8, 9]
         build_type: [Debug, Release]
         os: [ubuntu-20.04]
     container:
@@ -41,7 +41,6 @@ jobs:
           conan create -s build_type=${{ matrix.build_type }} \
             -s arch_build=x86_64 \
             -s os_build=Linux \
-            -s compiler.version=${{ matrix.compiler_version }} \
             -s compiler.libcxx=libstdc++11 \
             -b missing -b outdated . sintef/stable
       - name: Conan upload
