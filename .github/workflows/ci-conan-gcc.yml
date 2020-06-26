@@ -16,56 +16,31 @@ jobs:
   conan-with-gcc:
     name: Conan
     runs-on: ${{ matrix.os }}
-    env:
-      CC: gcc-${{ matrix.compiler_version }}
-      CXX: g++-${{ matrix.compiler_version }}
     strategy:
       fail-fast: false
       matrix:
         compiler_version: [6, 7, 8, 9]
         build_type: [Debug, Release]
-        os: [ubuntu-16.04, ubuntu-18.04, ubuntu-20.04]
-        exclude:
-          - os: ubuntu-16.04
-            compiler_version: 7
-          - os: ubuntu-16.04
-            compiler_version: 8
-          - os: ubuntu-16.04
-            compiler_version: 9
-          - os: ubuntu-18.04
-            compiler_version: 6
-          - os: ubuntu-18.04
-            compiler_version: 9
-          - os: ubuntu-20.04
-            compiler_version: 6
-          - os: ubuntu-20.04
-            compiler_version: 7
-          - os: ubuntu-20.04
-            compiler_version: 8
+        os: [ubuntu-20.04]
+    container:
+      image: conanio/gcc${{ matrix.compiler_version }}
+      options: -u 0
     steps:
       - uses: actions/checkout@v2
       - name: Install prerequisites
         run: |
-          sudo pip3 install --upgrade setuptools pip cython wheel jinja2
+          sudo apt-get update
+          sudo pip3 install --upgrade setuptools pip cython wheel
           sudo pip3 install conan requests
-          sudo pip3 install conan_package_tools
           sudo apt-get install bison flex
           sudo apt-get remove '*jdk*'
-          if [ ${{ matrix.compiler_version }} -eq 6 ]; then
-              sudo pip3 uninstall -y cython
-              echo "uninstalled cython to disable python DCPS API"
-              sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-              sudo apt-get update
-              sudo apt-get remove gcc-7 g++7 gcc-8 g++8 gcc-9 g++9 -y
-              sudo apt-get install gcc-6 g++-6 -y
-          fi
       - name: Configure Conan
         run: conan remote add sintef ${CONAN_UPLOAD} --insert 0
       - name: Conan create
         run: |
           conan create -s build_type=${{ matrix.build_type }} \
             -s arch_build=x86_64 \
-           -s os_build=Linux \
+            -s os_build=Linux \
             -s compiler.version=${{ matrix.compiler_version }} \
             -s compiler.libcxx=libstdc++11 \
             -b missing -b outdated . sintef/stable
