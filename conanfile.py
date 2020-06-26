@@ -86,6 +86,15 @@ class OpenSpliceConan(ConanFile):
         tools.replace_in_file(os.path.join(clang_path, 'config.mak'),
                               '$(CFLAGS_LTO)', '')
 
+        shutil.copy(os.path.join(self._source_subfolder,
+                                 'setup',
+                                 'configuration',
+                                 'x86_64.linux'),
+                    os.path.join(self._source_subfolder,
+                                 'setup',
+                                 'configuration',
+                                 'x86_64.linux_clang'))
+
     def build(self):
         config = "dev" if self.settings.build_type == "Debug" else "release"
         if self.settings.os == "Windows":
