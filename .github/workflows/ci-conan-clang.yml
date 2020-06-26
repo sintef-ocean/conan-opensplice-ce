@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        compiler_version: [10]
+        compiler_version: [8, 9, 10]
         build_type: [Debug, Release]
         os: [ubuntu-20.04]
     container:
@@ -29,10 +29,12 @@ jobs:
       - name: Install prerequisites
         run: |
           apt-get update
-          apt-get install -y bison flex gawk make clang-tools-10 git cmake python3-pip
+          apt-get install -y bison flex gawk make \
+            clang-tools-${{ matrix.compiler_version }} git cmake python3-pip
           pip3 install --upgrade setuptools pip cython wheel conan requests
-          ln -s /usr/bin/clang /usr/bin/clang-10
-          ln -s /usr/bin/clang++ /usr/bin/clang++-10
+          ln -s /usr/bin/clang-${{ matrix.compiler_version }} /usr/bin/clang
+          ln -s /usr/bin/clang++-${{ matrix.compiler_version }} /usr/bin/clang++
+          apt-get remove -y '*jdk*'
       - name: Configure Conan
         run: conan remote add sintef ${CONAN_UPLOAD} --insert 0
       - name: Conan create
