@@ -24,10 +24,14 @@ jobs:
         os: [ubuntu-20.04]
     container:
       image: debian:bullseye
+    env:
+      CC: clang-${{ matrix.compiler_version }}
+      CXX: clang++-${{ matrix.compiler_version }}
     steps:
       - uses: actions/checkout@v2
       - name: Install prerequisites
         run: |
+          echo Compiler: $CXX
           apt-get update
           apt-get install -y bison flex gawk make \
             clang-tools-${{ matrix.compiler_version }} git cmake python3-pip
@@ -41,6 +45,7 @@ jobs:
         run: |
           conan create -s build_type=${{ matrix.build_type }} \
             -s compiler.version=${{ matrix.compiler_version }} \
+            -s compiler=clang \
             -s compiler.libcxx=libstdc++11 \
             -b missing -b outdated . sintef/stable
       - name: Conan upload
