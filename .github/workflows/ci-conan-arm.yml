@@ -29,6 +29,7 @@ jobs:
         env:
           THE_IMAGE: ringhorne/debian-buster-buildbase
         run: |
+          [ ${{ matrix.build_type }} = "Debug" ] && export DISABLE_TEST="-tf None"
           docker run \
             -e CONAN_NON_INTERACTIVE \
             -e CONAN_PASSWORD_SINTEF \
@@ -38,8 +39,7 @@ jobs:
             conan create \
               -s build_type=${{ matrix.build_type }} \
               -s arch=${{ matrix.arch }} \
-              -s compiler.libcxx=libstdc++11 \
-              --test-folder None \
+              -s compiler.libcxx=libstdc++11 ${DISABLE_TEST} \
               -b missing -b outdated . sintef/stable && \
             conan upload --all -c -r sintef ${SINTEF_REFERENCE} \
               --retry 5 --retry-wait 20 --force && \
