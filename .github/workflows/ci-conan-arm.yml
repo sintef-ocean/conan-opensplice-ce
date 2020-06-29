@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [armv7, arm64]
+        arch: [armv7, armv8]
         build_type: [Debug, Release]
     steps:
       - name: Install qemu emulators
@@ -29,7 +29,7 @@ jobs:
         run: |
           docker run -e CONAN_NON_INTERACTIVE \
             -v $PWD:/home ${THE_IMAGE}:${{ matrix.arch }} /bin/bash -c \
-            "conan remote add ${CONAN_UPLOAD} --insert 1 && \
+            "conan remote add sintef ${CONAN_UPLOAD} --insert 1 && \
             conan create \
               -s build_type=${{ matrix.build_type }} \
               -s arch=${{ matrix.arch }} \
