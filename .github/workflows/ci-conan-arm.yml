@@ -39,6 +39,7 @@ jobs:
               -s build_type=${{ matrix.build_type }} \
               -s arch=${{ matrix.arch }} \
               -s compiler.libcxx=libstdc++11 \
+              --test-folder None \
               -b missing -b outdated . sintef/stable && \
             conan upload --all -c -r sintef ${SINTEF_REFERENCE} \
               --retry 5 --retry-wait 20 --force && \
