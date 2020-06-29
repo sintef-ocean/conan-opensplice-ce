@@ -42,6 +42,9 @@ class OpenSpliceConan(ConanFile):
         else:
             extra = ""
 
+        if arch == "armv7" or arch == "armv6":
+            arch += "l"
+
         return arch + "." + system + extra
 
     def build_requirements(self):
@@ -61,6 +64,10 @@ class OpenSpliceConan(ConanFile):
         tools.replace_in_file(os.path.join(self._source_subfolder, 'setup',
                                            'x86_64.linux_clang-default.mak'),
                               'c++0x', 'c++11')
+        tools.replace_in_file(os.path.join(self._source_subfolder, 'setup',
+                                           'arm.linux_native-common.mak'),
+                              'c++0x', 'c++11')
+
 
         # add missing clang targets
         clang_tgt = 'x86_64.linux_clang-release'
@@ -116,7 +123,7 @@ class OpenSpliceConan(ConanFile):
                 self._source_subfolder,
                 self._ospl_platform + "-" + config,
                 tools.cpu_count(),
-                "msvc" if self.settings.compiler == "Visual Studio" else ""))
+                ""))
 
     def package(self):
         suffix = "-dev" if self.settings.build_type == "Debug" else ""

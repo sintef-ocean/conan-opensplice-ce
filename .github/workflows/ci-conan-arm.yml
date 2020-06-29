@@ -1,0 +1,41 @@
+name: ARM Conan
+
+# This workflow is triggered on pushes to the repository.
+on: [push]
+
+env:
+  SINTEF_REFERENCE: "opensplice-ce*"
+  SINTEF_CONAN_CLASS: "OpenSpliceConan"
+  CONAN_UPLOAD: "https://api.bintray.com/conan/sintef-ocean/conan"
+  CONAN_NON_INTERACTIVE: True
+
+jobs:
+  conan-with-arm:
+    name: Conan
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [armv7, arm64]
+        build_type: [Debug, Release]
+    steps:
+      - name: Install qemu emulators
+        run: docker run --rm --privileged linuxkit/binfmt:v0.8
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Run in container
+        env:
+          THE_IMAGE: ringhorne/debian-buster-buildbase
+        run: |
+          docker run -e CONAN_NON_INTERACTIVE \
+            -v $PWD:/home ${THE_IMAGE}:${{ matrix.arch }} /bin/bash -c \
+            "conan remote add ${CONAN_UPLOAD} --insert 1 && \
+            conan create \
+              -s build_type=${{ matrix.build_type }} \
+              -s arch=${{ matrix.arch }} \
+              -s compiler.libcxx=libstdc++11 \
+              -b missing -b outdated . sintef/stable && \
+            conan upload --all -c -r sintef ${SINTEF_REFERENCE} \
+              --retry 5 --retry-wait 20 --force && \
+            python3 bintray.py ${SINTEF_CONAN_CLASS} \
+              ${{ secrets.BINTRAY_USER }} ${{ secrets.BINTRAY_API_KEY }}"

@@ -111,11 +111,16 @@ else()
         set(suffx "_clang")
     endif()
 
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(OpenSplice_config "x86_64.linux${suffx}")
+    if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+      set(OpenSplice_config "x86_64.linux${suffx}")
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7l")
+      set(OpenSplice_config "armv7l.linux")
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64") # armv8?
+      set(OpenSplice_config "armv8.linux")
     else()
-        set(OpenSplice_config "x86.linux")
+      set(OpenSplice_config "x86.linux")
     endif()
+
 endif(WIN32)
 
 find_path(OpenSplice_HOME_RELEASE
