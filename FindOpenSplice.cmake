@@ -17,6 +17,7 @@
 #
 # Functions:
 #
+#     OpenSplice_generate_isocpp(<IDL file> <output directory> <variable for source file names>)
 #     OpenSplice_generate_isocpp2(<IDL file> <output directory> <variable for source file names>)
 #
 # ==============================================================================
@@ -185,6 +186,10 @@ if(OpenSplice_versionRelease OR OpenSplice_versionDebug)
         set(sourceFiles
             "${outputDir}/${baseName}.cpp"
             "${outputDir}/${baseName}.h"
+            "${outputDir}/${baseName}Dcps.cpp"
+            "${outputDir}/${baseName}Dcps.h"
+            "${outputDir}/${baseName}Dcps_impl.cpp"
+            "${outputDir}/${baseName}Dcps_impl.h"
             "${outputDir}/${baseName}SplDcps.cpp"
             "${outputDir}/${baseName}SplDcps.h"
             "${outputDir}/${baseName}_DCPS.hpp")
