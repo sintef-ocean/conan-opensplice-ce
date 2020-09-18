@@ -17,7 +17,9 @@ class OpenSpliceConan(ConanFile):
     topics = ("dds", "opensplice", "publish-subscribe", "pub-sub", "communication")
 
     settings = "os", "compiler", "build_type", "arch"
+    options = { "include_cs": [True, False] }
     default_options = {
+        "include_cs": False,
         "cygwin_installer:additional_packages":
         "gcc-core,make,git,perl,bison,flex,gawk,zip,unzip",
         "cygwin_installer:with_pear": False
@@ -46,6 +48,12 @@ class OpenSpliceConan(ConanFile):
             arch += "l"
 
         return arch + "." + system + extra
+
+    def configure(self):
+        if self.settings.compiler != "Visual Studio" and self.options.include_cs:
+            raise ConanInvalidConfiguration("'include_cs' is only valid for compiler 'Visual Studio'")
+        if self.settigs.compiler != "Visual Studio":
+            del self.options.include_cs
 
     def build_requirements(self):
         if self.settings.os == "Windows" and False:
@@ -107,14 +115,15 @@ class OpenSpliceConan(ConanFile):
         if self.settings.os == "Windows":
             env_vars = tools.vcvars_dict(self)
             with tools.vcvars(self.settings):
-                self.run("bash {} {} {} {} {} '{}' '{}'".format(
+                self.run("bash {} {} {} {} {} '{}' '{}' {}".format(
                     self._build_script,
                     self._source_subfolder,
                     self._ospl_platform + "-" + config,
                     tools.cpu_count(),
                     "msvc" if self.settings.compiler == "Visual Studio" else "",
                     env_vars["VSINSTALLDIR"],
-                    env_vars["WindowsSdkDir"]),
+                    env_vars["WindowsSdkDir"],
+                    "yes" if self.options.include_cs else "no"),
                          win_bash=True,
                          subsystem="cygwin")
         else:
