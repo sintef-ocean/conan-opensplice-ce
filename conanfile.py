@@ -52,7 +52,7 @@ class OpenSpliceConan(ConanFile):
     def configure(self):
         if self.settings.compiler != "Visual Studio" and self.options.include_cs:
             raise ConanInvalidConfiguration("'include_cs' is only valid for compiler 'Visual Studio'")
-        if self.settigs.compiler != "Visual Studio":
+        if self.settings.compiler != "Visual Studio":
             del self.options.include_cs
 
     def build_requirements(self):
