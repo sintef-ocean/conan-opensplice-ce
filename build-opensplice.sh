@@ -8,9 +8,12 @@
 
 cd "$1"
 
+OVERRIDE_INCLUDE_CS=no
+
 if [ "$4" = "msvc" ]; then
     export VS_HOME="$(cygpath "$5")"
     export WINDOWSSDKDIR="$(cygpath "$6")"
+    OVERRIDE_INCLUDE_CS="$7"
     unset tmp
     unset temp
     unset TMP
@@ -26,7 +29,6 @@ if [ "$4" = "msvc" ]; then
 fi
 
 OVERRIDE_INCLUDE_JAVA=no
-OVERRIDE_INCLUDE_CS=no
 OVERRIDE_INCLUDE_ORB=no
 export OSPL_DOCS=none
 export OSPL_USE_CXX11=yes

@@ -5,6 +5,7 @@ on: [push]
 
 env:
   SINTEF_REFERENCE: "opensplice-ce*"
+  SINTEF_LIBNAME: "opensplice-ce"
   SINTEF_CONAN_CLASS: "OpenSpliceConan"
   CONAN_UPLOAD: "https://api.bintray.com/conan/sintef-ocean/conan"
   CONAN_PASSWORD_SINTEF: ${{ secrets.BINTRAY_API_KEY }}
@@ -24,6 +25,7 @@ jobs:
       matrix:
         os: [windows-2019]
         build_type: [Debug, Release]
+        option_include_cs: [include_cs=True, include_cs=False]
         compiler_version: [16]
         compiler_toolset: [v141, v142]
 
@@ -43,6 +45,7 @@ jobs:
           conan create -s build_type=${{ matrix.build_type }} `
             -s compiler.toolset=${{ matrix.compiler_toolset }} `
             -s compiler.version=${{ matrix.compiler_version }} `
+            -o ${env:SINTEF_LIBNAME}:${{matrix.option_include_cs}} `
             -b missing -b outdated . sintef/stable
       - name: Conan upload
         run: |
