@@ -127,6 +127,7 @@ if(WIN32)
         set(OpenSplice_config "x86.win32")
     endif()
 else()
+    set(csharp_enabled FALSE)
 
     if("${CMAKE_CXX_COMPILER}" MATCHES ".*clang.*")
         set(suffx "_clang")
