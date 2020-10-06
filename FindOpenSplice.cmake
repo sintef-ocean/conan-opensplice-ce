@@ -45,10 +45,15 @@ endfunction()
 
 # Configures all targets for build configuration `config`, assuming that
 # `homeDir` actually contains the installed files for this configuration.
-function(OpenSplice_configure_targets config homeDir)
+function(OpenSplice_configure_targets config homeDir csEnabled)
     string(TOUPPER "${config}" configUpper)
-    set(suffix "_${configUpper}")
+    set(SUFFIX "_${configUpper}")
 
+    if(csEnabled AND EXISTS "${homeDir}/bin/dcpssacsAssembly.dll")
+        set(addCSharp TRUE)
+    else()
+        set(addCSharp FALSE)
+    endif()
     if(NOT TARGET "OpenSplice::isocpp2")
         add_library("OpenSplice::ddskernel" SHARED IMPORTED)
         set_property(TARGET "OpenSplice::ddskernel" PROPERTY INTERFACE_INCLUDE_DIRECTORIES
@@ -67,6 +72,9 @@ function(OpenSplice_configure_targets config homeDir)
         set_property(TARGET "OpenSplice::isocpp2" PROPERTY INTERFACE_LINK_LIBRARIES
             "OpenSplice::ddskernel")
     endif()
+    if(addCSharp AND NOT TARGET "OpenSplice::sacs")
+        add_library("OpenSplice::sacs" SHARED IMPORTED)
+    endif()
     set_property(TARGET "OpenSplice::ddskernel" APPEND PROPERTY IMPORTED_CONFIGURATIONS "${configUpper}")
     set_property(TARGET "OpenSplice::isocpp" APPEND PROPERTY IMPORTED_CONFIGURATIONS "${configUpper}")
     set_property(TARGET "OpenSplice::isocpp2" APPEND PROPERTY IMPORTED_CONFIGURATIONS "${configUpper}")
@@ -80,6 +88,12 @@ function(OpenSplice_configure_targets config homeDir)
         set_target_properties("OpenSplice::isocpp2" PROPERTIES
             IMPORTED_IMPLIB${SUFFIX} "${homeDir}/lib/dcpsisocpp2.lib"
             IMPORTED_LOCATION${SUFFIX} "${homeDir}/bin/dcpsisocpp2.dll")
+        if(addCSharp)
+            set_property(TARGET "OpenSplice::sacs" APPEND PROPERTY IMPORTED_CONFIGURATIONS "${configUpper}")
+            set_target_properties("OpenSplice::sacs" PROPERTIES
+                IMPORTED_COMMON_LANGUAGE_RUNTIME${SUFFIX} "CSharp"
+                IMPORTED_LOCATION${SUFFIX} "${homeDir}/bin/dcpssacsAssembly.dll")
+        endif()
     else()
         set_target_properties("OpenSplice::ddskernel" PROPERTIES
             IMPORTED_LOCATION${SUFFIX} "${homeDir}/lib/libddskernel.so"
@@ -101,12 +115,19 @@ if(NOT DEFINED OSPL_HOME)
 endif(NOT DEFINED OSPL_HOME)
 
 if(WIN32)
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    get_property(csharp_enabled GLOBAL PROPERTY ENABLED_LANGUAGES)
+    if(csharp_enabled MATCHES "CSharp")
+        set(csharp_enabled TRUE)
+    else()
+      set(csharp_enabled FALSE)
+    endif()
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8 OR (csharp_enabled AND CMAKE_CSharp_COMPILER_ARCHITECTURE_ID STREQUAL "x64"))
         set(OpenSplice_config "x86_64.win64")
     else()
         set(OpenSplice_config "x86.win32")
     endif()
 else()
+    set(csharp_enabled FALSE)
 
     if("${CMAKE_CXX_COMPILER}" MATCHES ".*clang.*")
         set(suffx "_clang")
@@ -149,14 +170,14 @@ OpenSplice_check_dir("${OpenSplice_HOME_DEBUG}" "${OpenSplice_config}-dev" OpenS
 
 if(OpenSplice_versionRelease OR OpenSplice_versionDebug)
     if(OpenSplice_versionRelease)
-        OpenSplice_configure_targets("release" "${OpenSplice_HOME_RELEASE}")
+        OpenSplice_configure_targets("release" "${OpenSplice_HOME_RELEASE}" ${csharp_enabled})
         if(OpenSplice_versionDebug STREQUAL OpenSplice_versionRelease)
-            OpenSplice_configure_targets("debug" "${OpenSplice_HOME_DEBUG}")
+            OpenSplice_configure_targets("debug" "${OpenSplice_HOME_DEBUG}" ${csharp_enabled})
         endif()
         set(OpenSplice_VERSION "${OpenSplice_versionRelease}")
         set(OpenSplice_home "${OpenSplice_HOME_RELEASE}")
     else() # OpenSplice_versionDebug is set
-        OpenSplice_configure_targets("debug" "${OpenSplice_HOME_DEBUG}")
+        OpenSplice_configure_targets("debug" "${OpenSplice_HOME_DEBUG}" ${csharp_enabled})
         set(OpenSplice_VERSION "${OpenSplice_versionDebug}")
         set(OpenSplice_home "${OpenSplice_HOME_DEBUG}")
     endif()
@@ -216,6 +237,23 @@ if(OpenSplice_versionRelease OR OpenSplice_versionDebug)
             VERBATIM)
         set(${sourceFilesVar} ${sourceFiles} PARENT_SCOPE)
     endfunction()
+
+    if(TARGET "OpenSplice::sacs")
+        function(OpenSplice_generate_sacs idlFile outputDir sourceFilesVar)
+            get_filename_component(baseName "${idlFile}" NAME_WE)
+            set(sourceFiles
+                "${outputDir}/${baseName}.cs"
+                "${outputDir}/I${baseName}Dcps.cs"
+                "${outputDir}/${baseName}Dcps.cs"
+                "${outputDir}/${baseName}SplDcps.cs")
+            add_custom_command(
+                OUTPUT ${sourceFiles}
+                COMMAND "${OpenSplice_idlpp_wrapper}" "-S" "-l" "cs" "-d" "${outputDir}" "${idlFile}"
+                MAIN_DEPENDENCY "${idlFile}"
+                VERBATIM)
+            set(${sourceFilesVar} ${sourceFiles} PARENT_SCOPE)
+        endfunction()
+    endif()
 endif()
 
 include(FindPackageHandleStandardArgs)
