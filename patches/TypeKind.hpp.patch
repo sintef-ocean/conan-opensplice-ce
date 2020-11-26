@@ -1,0 +1,16 @@
+--- src/api/dcps/isocpp2/include/dds/core/xtypes/TypeKind.hpp	2020-11-24 16:03:33.223558641 +0100
++++ src/api/dcps/isocpp2/include/dds/core/xtypes/TypeKind.hpp	2020-11-24 16:04:57.267558641 +0100
+@@ -1,5 +1,5 @@
+-#ifndef OMG_DDS_XTYPE_
+-#define OMG_DDS_TYPE_OBJECT_HPP_
++#ifndef OMG_DDS_XTYPE_TYPEKIND_HPP_
++#define OMG_DDS_XTYPE_TYPEKIND_HPP_
+ 
+ /* Copyright 2010, Object Management Group, Inc.
+  * Copyright 2010, PrismTech, Corp.
+@@ -85,4 +85,4 @@
+ #endif  // OMG_DDS_X_TYPES_DYNANIC_TYPE_SUPPORT
+ 
+ 
+-#endif // !defined(OMG_DDS_TYPE_OBJECT_HPP_)
++#endif // !defined(OMG_DDS_XTYPE_TYPEKIND_HPP_)

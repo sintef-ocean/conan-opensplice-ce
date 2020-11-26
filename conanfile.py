@@ -29,7 +29,7 @@ class OpenSpliceConan(ConanFile):
     _find_script = "FindOpenSplice.cmake"
     _source_subfolder = "source_subfolder"
 
-    exports_sources = [_build_script, _find_script]
+    exports_sources = [_build_script, _find_script, "patches/*"]
 
     @property
     def _ospl_platform(self):
@@ -109,6 +109,8 @@ class OpenSpliceConan(ConanFile):
                                  'setup',
                                  'configuration',
                                  'setup_x86_64.linux_clang'))
+        # patch xtypes errors (remove if this gets fixed...)
+        tools.patch(patch_file=os.path.join('patches','TypeKind.hpp.patch'), base_path=self._source_subfolder)
 
     def build(self):
         config = "dev" if self.settings.build_type == "Debug" else "release"
