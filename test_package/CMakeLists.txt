@@ -14,4 +14,3 @@ if(MSVC)
     # Suppress some warnings that we have no control over.
     target_compile_options(test_prog PRIVATE "/wd4251" "/wd4267")
 endif()
-target_compile_definitions(test_prog PRIVATE OSPL_USE_CXX11)

@@ -1,4 +1,6 @@
-from conans import ConanFile, tools
+from conans import ConanFile, tools, __version__ as conan_version
+from conans.errors import ConanInvalidConfiguration
+from conans.model.version import Version
 import os
 import shutil
 import subprocess
@@ -26,16 +28,20 @@ class OpenSpliceConan(ConanFile):
     }
 
     _build_script = "build-opensplice.sh"
+    _build_android = "build-android.sh"
     _find_script = "FindOpenSplice.cmake"
     _source_subfolder = "source_subfolder"
 
-    exports_sources = [_build_script, _find_script, "patches/*"]
+    exports_sources = [_build_android, _build_script, _find_script, "patches/*", "setup'"]
+
 
     @property
     def _ospl_platform(self):
         arch = self.settings.arch.value.lower()
         if self.settings.os == "Windows":
             system = "win64" if arch == "x86_64" else "win32"
+        elif self.settings.os == "Android":
+            system = "linux_android"
         else:
             system = self.settings.os.value.lower()
 
@@ -56,14 +62,35 @@ class OpenSpliceConan(ConanFile):
             del self.options.include_cs
 
     def build_requirements(self):
+        # Cygwin installer defective ATM!
         if self.settings.os == "Windows" and False:
             self.build_requires("cygwin_installer/2.9.0@bincrafters/stable")
+
+        if self.settings.os == "Android":
+            self.build_requires("android_ndk_installer/r21d@bincrafters/stable")
+
+    def configure(self):
+        if self.settings.os == "Android":
+            if conan_version < Version("1.24"):
+                raise ConanInvalidConfiguration(
+                    "Building for Android requires conan >= 1.24")
+            settings_build = getattr(self, 'settings_build', None)
+            # TODO: this does not work:
+            if settings_build and settings_build.os == "Windows":
+                raise ConanInvalidConfiguration(
+                    "Recipe not implemented for compilation of Android on Windows")
+            if settings_build and settings_build.arch != "x86_64":
+                raise ConanInvalidConfiguration(
+                    "Recipe only implemented for x86_64 build platform for Android")
 
     def source(self):
         revision = "OSPL_V" + self.version.replace(".", "_") + "OSS_RELEASE"
         url = "https://github.com/ADLINK-IST/opensplice/archive/" \
             + revision + ".tar.gz"
         tools.get(url)
+
+        if(os.path.isdir(self._source_subfolder)):
+            shutil.rmtree(self._source_subfolder)
         os.rename("opensplice-" + revision, self._source_subfolder)
 
         tools.replace_in_file(os.path.join(self._source_subfolder, 'setup',
@@ -76,41 +103,52 @@ class OpenSpliceConan(ConanFile):
                                            'arm.linux_native-common.mak'),
                               'c++0x', 'c++11')
 
-
-        # add missing clang targets
-        clang_tgt = 'x86_64.linux_clang-release'
-
-        environ_path = os.path.join(
-            self._source_subfolder, 'setup', 'environment')
-        shutil.copy(os.path.join(environ_path, 'x86_64.linux-release'),
-                    os.path.join(environ_path, clang_tgt))
-
-        tools.replace_in_file(os.path.join(environ_path, clang_tgt),
-                              'x86_64.linux-release',
-                              clang_tgt)
-
-        clang_path = os.path.join(self._source_subfolder, 'setup', clang_tgt)
-        os.makedirs(clang_path)
-        shutil.copy(os.path.join(self._source_subfolder,
-                                 'setup',
-                                 'x86_64.linux-release',
-                                 'config.mak'),
-                    os.path.join(clang_path, 'config.mak'))
-        tools.replace_in_file(os.path.join(clang_path, 'config.mak'),
-                              '-default', '_clang-default')
-        tools.replace_in_file(os.path.join(clang_path, 'config.mak'),
-                              '$(CFLAGS_LTO)', '')
-
-        shutil.copy(os.path.join(self._source_subfolder,
-                                 'setup',
-                                 'configuration',
-                                 'setup_x86_64.linux'),
-                    os.path.join(self._source_subfolder,
-                                 'setup',
-                                 'configuration',
-                                 'setup_x86_64.linux_clang'))
         # patch xtypes errors (remove if this gets fixed...)
         tools.patch(patch_file=os.path.join('patches','TypeKind.hpp.patch'), base_path=self._source_subfolder)
+
+        # Depend on build platform's odlpp and idlpp executables
+        tools.replace_in_file(os.path.join(self._source_subfolder, 'bin',
+                                           'configure_functions'),
+                              'SPLICE_EXEC_PATH="${OSPL_HOME}/exec/${SPLICE_TARGET}"',
+                              'SPLICE_EXEC_PATH="${OSPL_HOME}/exec/${SPLICE_HOST}"')
+
+        # Disable shared memory stuff on android
+        tools.replace_in_file(os.path.join(self._source_subfolder, 'src',
+                                           'abstraction', 'os', 'linux',
+                                           'code', 'os_sharedmem.c'),
+                              '#include "os__sharedmem.h"',
+                              '''\
+#ifdef __ANDROID__
+#define OS_SHAREDMEM_FILE_DISABLE
+#define OS_SHAREDMEM_SEG_DISABLE
+#else
+#include "os__sharedmem.h"
+#endif''')
+
+        # "execinfo.h" is not available on android
+        path_to_patch = os.path.join(self._source_subfolder, 'src',
+                                     'services', 'ddsi2e', 'core')
+        tools.replace_in_file(
+            os.path.join(path_to_patch, 'sysdeps.h'),
+            'defined (OS_QNX_DEFS_H)',
+            'defined (OS_QNX_DEFS_H) || defined(__ANDROID__)')
+
+        tools.replace_in_file(
+            os.path.join(path_to_patch, 'sysdeps.c'),
+            '__GNUC_PATCHLEVEL__) < 40100)',
+            '__GNUC_PATCHLEVEL__) < 40100) || defined(__ANDROID__)')
+
+
+        tools.replace_in_file(
+            os.path.join(self._source_subfolder, 'src', 'abstraction', 'os',
+                         'posix', 'include', 'os_os_thread.h'),
+            "#include <pthread.h>",
+            '''#include <pthread.h>
+int pthread_attr_setinheritsched (pthread_attr_t *attr, int inherit);''')
+
+        # Add new configurations, such as Android
+        shutil.copytree('setup', os.path.join(self._source_subfolder, 'setup'),
+                        dirs_exist_ok=True)
 
     def build(self):
         config = "dev" if self.settings.build_type == "Debug" else "release"
@@ -128,6 +166,27 @@ class OpenSpliceConan(ConanFile):
                     "yes" if self.options.include_cs else "no"),
                          win_bash=True,
                          subsystem="cygwin")
+        elif self.settings.os == "Android":
+            # Need to build for host first.
+            self.run("bash {} {} x86_64.linux-tools {}".format(
+                self._build_script,
+                self._source_subfolder,
+                tools.cpu_count()))
+
+            # Hack to ensure that %idl.STAMP is run
+            tools.replace_in_file(os.path.join(
+                self._source_subfolder,
+                'src', 'osplcore', 'makefile.mak'),
+                                  'idl | build_tools_stage_idlpp', 'idl ')
+
+            self.run(
+                "bash {} {} {} {} $CC $CXX $RANLIB $AR $SYSROOT $ANDROID_ABI"
+                .format(
+                    self._build_android,
+                    self._source_subfolder,
+                    self._ospl_platform + "-" + config,
+                    tools.cpu_count()),
+                run_environment=True)
         else:
             self.run("bash {} {} {} {} {}".format(
                 self._build_script,
@@ -150,6 +209,14 @@ class OpenSpliceConan(ConanFile):
                   else "release.com", dst="", src=srcDir)
         self.copy("LICENSE", dst="licenses", src=self._source_subfolder)
         self.copy(self._find_script)
+        #etc/config/ospl.xml, #etc/ospl_metaconfig.xml -> share/
+
+        if self.settings.os == "Android":
+            # Copy idlpp tool and its dependency for generating source code
+            srcDir = os.path.join(self._source_subfolder, "install", "HDE",
+                                  'x86_64.linux')
+            self.copy("idlpp*", dst="bin", src=os.path.join(srcDir, "bin"))
+            self.copy("*ddshts*", dst="lib", src=os.path.join(srcDir, "lib"))
 
     def package_info(self):
         self.cpp_info.includedirs = [
