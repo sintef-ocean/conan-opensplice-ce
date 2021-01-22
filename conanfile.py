@@ -1,6 +1,7 @@
 from conans import ConanFile, tools, __version__ as conan_version
 from conans.errors import ConanInvalidConfiguration
 from conans.model.version import Version
+from distutils.dir_util import copy_tree
 import os
 import shutil
 import subprocess
@@ -33,7 +34,7 @@ class OpenSpliceConan(ConanFile):
     _find_script = "FindOpenSplice.cmake"
     _source_subfolder = "source_subfolder"
 
-    exports_sources = [_build_android, _build_script, _find_script, "patches/*", "setup'"]
+    exports_sources = [_build_android, _build_script, _find_script, "patches/*", "setup/*"]
 
 
     @property
@@ -148,19 +149,13 @@ class OpenSpliceConan(ConanFile):
 int pthread_attr_setinheritsched (pthread_attr_t *attr, int inherit);''')
 
         # Add new configurations, such as Android
-        if sys.version_info.major >= 3 and sys.version_info.minor >= 8:
+        if sys.version_info.major >= 3 and sys.version_info.minor >= 9:
             shutil.copytree('setup', os.path.join(self._source_subfolder, 'setup'),
                             dirs_exist_ok=True)
         else:
             src = 'setup'
             dst = os.path.join(self._source_subfolder, 'setup')
-            for item in os.listdir(src):
-                s = os.path.join(src, item)
-                d = os.path.join(dst, item)
-                if os.path.isdir(s):
-                    shutil.copytree(s, d)
-                else:
-                    shutil.copy2(s, d)
+            copy_tree(src, dst)
 
     def build(self):
         config = "dev" if self.settings.build_type == "Debug" else "release"
