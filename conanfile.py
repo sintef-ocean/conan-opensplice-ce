@@ -4,6 +4,7 @@ from conans.model.version import Version
 import os
 import shutil
 import subprocess
+import sys
 
 
 class OpenSpliceConan(ConanFile):
@@ -147,8 +148,19 @@ class OpenSpliceConan(ConanFile):
 int pthread_attr_setinheritsched (pthread_attr_t *attr, int inherit);''')
 
         # Add new configurations, such as Android
-        shutil.copytree('setup', os.path.join(self._source_subfolder, 'setup'),
-                        dirs_exist_ok=True)
+        if sys.version_info.major >= 3 and sys.version_info.minor >= 8:
+            shutil.copytree('setup', os.path.join(self._source_subfolder, 'setup'),
+                            dirs_exist_ok=True)
+        else:
+            src = 'setup'
+            dst = os.path.join(self._source_subfolder, 'setup')
+            for item in os.listdir(src):
+                s = os.path.join(src, item)
+                d = os.path.join(dst, item)
+                if os.path.isdir(s):
+                    shutil.copytree(s, d)
+                else:
+                    shutil.copy2(s, d)
 
     def build(self):
         config = "dev" if self.settings.build_type == "Debug" else "release"
