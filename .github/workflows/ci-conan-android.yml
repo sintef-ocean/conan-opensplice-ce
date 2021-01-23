@@ -48,7 +48,7 @@ jobs:
             -s compiler.version=9 \
             -s compiler.libcxx=c++_shared \
             -b missing -b outdated -b android_ndk_installer \
-            . sintef/testing
+            . sintef/stable
       - name: Conan upload
         run: |
           conan upload --all -c -r sintef ${SINTEF_REFERENCE} --retry 10 --retry-wait 20 --force

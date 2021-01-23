@@ -1,6 +1,7 @@
 [![GCC Conan](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/GCC%20Conan/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"GCC+Conan")
 [![Clang Conan](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/Clang%20Conan/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"Clang+Conan")
 [![MSVC Conan](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/MSVC%20Conan/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"MSVC+Conan")
+[![Android Conan](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/Android%20Conan/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"Android+Conan")
 [![Download](https://api.bintray.com/packages/sintef-ocean/conan/opensplice-ce%3Asintef/images/download.svg)](https://bintray.com/sintef-ocean/conan/opensplice-ce%3Asintef/_latestVersion)
 
 
