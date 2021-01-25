@@ -216,7 +216,6 @@ int pthread_attr_setinheritsched (pthread_attr_t *attr, int inherit);''')
                   else "release.com", dst="", src=srcDir)
         self.copy("LICENSE", dst="licenses", src=self._source_subfolder)
         self.copy(self._find_script)
-        #etc/config/ospl.xml, #etc/ospl_metaconfig.xml -> share/
 
         if self.settings.os == "Android":
             # Copy idlpp tool and its dependency for generating source code

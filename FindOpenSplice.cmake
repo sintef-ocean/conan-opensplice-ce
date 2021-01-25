@@ -75,9 +75,6 @@ function(OpenSplice_configure_targets config homeDir csEnabled)
             "${homeDir}/include/dcps/C++/SACPP")
         set_property(TARGET "OpenSplice::isocpp2" PROPERTY INTERFACE_LINK_LIBRARIES
             "OpenSplice::ddskernel")
-          # These are needed for dlopen w default ospl.xml: OpenSplice::ddsi2;OpenSplice::spliced;OpenSplice::durability
-
-
     endif()
     if(addCSharp AND NOT TARGET "OpenSplice::sacs")
         add_library("OpenSplice::sacs" SHARED IMPORTED)
@@ -165,7 +162,6 @@ else()
       string(PREPEND suffx "_android")
     endif()
 
-    #message(STATUS "PROCESSOR: ${CMAKE_SYSTEM_PROCESSOR}")
     if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
       set(OpenSplice_config "x86_64.linux")
     elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7l")
@@ -183,8 +179,6 @@ else()
     endif()
 
     string(APPEND OpenSplice_config "${suffx}")
-
-    #message(STATUS "OpenSplice config: ${OpenSplice_config}")
 
 endif(WIN32)
 
