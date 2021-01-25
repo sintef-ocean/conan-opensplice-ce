@@ -23,8 +23,7 @@ jobs:
         build_type: [Debug, Release]
         os: [ubuntu-20.04]
     container:
-      image: conanio/clang${{ matrix.compiler_version }}
-      options: -u 0
+      image: debian:bullseye
     env:
       CC: clang-${{ matrix.compiler_version }}
       CXX: clang++-${{ matrix.compiler_version }}
@@ -33,11 +32,13 @@ jobs:
       - name: Install prerequisites
         run: |
           echo Compiler: $CXX
-          sudo apt-get update
-          sudo apt-get install -y bison flex gawk make \
+          apt-get update
+          apt-get install -y bison flex gawk make \
             clang-tools-${{ matrix.compiler_version }} git cmake python3-pip
-          sudo pip3 install --upgrade setuptools pip cython wheel conan requests
-          sudo apt-get remove -y '*jdk*'
+          pip3 install --upgrade setuptools pip cython wheel conan requests
+          ln -s /usr/bin/clang-${{ matrix.compiler_version }} /usr/bin/clang
+          ln -s /usr/bin/clang++-${{ matrix.compiler_version }} /usr/bin/clang++
+          apt-get remove -y '*jdk*'
       - name: Configure Conan
         run: conan remote add sintef ${CONAN_UPLOAD} --insert 0
       - name: Conan create
