@@ -1,0 +1,5 @@
+ifdef OSPL_OUTER_HOME
+include $(OSPL_OUTER_HOME)/setup/configuration/setup.linux_android_clang
+else
+include $(OSPL_HOME)/setup/configuration/setup.linux_android_clang
+endif

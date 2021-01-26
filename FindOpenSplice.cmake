@@ -56,6 +56,10 @@ function(OpenSplice_configure_targets config homeDir csEnabled)
     endif()
     if(NOT TARGET "OpenSplice::isocpp2")
         add_library("OpenSplice::ddskernel" SHARED IMPORTED)
+        add_library("OpenSplice::ddsi2" SHARED IMPORTED)
+        add_library("OpenSplice::spliced" SHARED IMPORTED)
+        add_library("OpenSplice::durability" SHARED IMPORTED)
+
         set_property(TARGET "OpenSplice::ddskernel" PROPERTY INTERFACE_INCLUDE_DIRECTORIES
             "${homeDir}/include"
             "${homeDir}/include/sys")
@@ -78,10 +82,22 @@ function(OpenSplice_configure_targets config homeDir csEnabled)
     set_property(TARGET "OpenSplice::ddskernel" APPEND PROPERTY IMPORTED_CONFIGURATIONS "${configUpper}")
     set_property(TARGET "OpenSplice::isocpp" APPEND PROPERTY IMPORTED_CONFIGURATIONS "${configUpper}")
     set_property(TARGET "OpenSplice::isocpp2" APPEND PROPERTY IMPORTED_CONFIGURATIONS "${configUpper}")
+    set_property(TARGET "OpenSplice::ddsi2" APPEND PROPERTY IMPORTED_CONFIGURATIONS "${configUpper}")
+    set_property(TARGET "OpenSplice::spliced" APPEND PROPERTY IMPORTED_CONFIGURATIONS "${configUpper}")
+    set_property(TARGET "OpenSplice::durability" APPEND PROPERTY IMPORTED_CONFIGURATIONS "${configUpper}")
     if(WIN32)
         set_target_properties("OpenSplice::ddskernel" PROPERTIES
             IMPORTED_IMPLIB${SUFFIX} "${homeDir}/lib/ddskernel.lib"
             IMPORTED_LOCATION${SUFFIX} "${homeDir}/bin/ddskernel.dll")
+          set_target_properties("OpenSplice::ddsi2" PROPERTIES
+            IMPORTED_IMPLIB${SUFFIX} "${homeDir}/lib/ddsi2.lib"
+            IMPORTED_LOCATION${SUFFIX} "${homeDir}/bin/ddsi2.dll")
+          set_target_properties("OpenSplice::spliced" PROPERTIES
+            IMPORTED_IMPLIB${SUFFIX} "${homeDir}/lib/spliced.lib"
+            IMPORTED_LOCATION${SUFFIX} "${homeDir}/bin/spliced.dll")
+          set_target_properties("OpenSplice::durability" PROPERTIES
+            IMPORTED_IMPLIB${SUFFIX} "${homeDir}/lib/durability.lib"
+            IMPORTED_LOCATION${SUFFIX} "${homeDir}/bin/durability.dll")
         set_target_properties("OpenSplice::isocpp" PROPERTIES
             IMPORTED_IMPLIB${SUFFIX} "${homeDir}/lib/dcpsisocpp.lib"
             IMPORTED_LOCATION${SUFFIX} "${homeDir}/bin/dcpsisocpp.dll")
@@ -97,6 +113,15 @@ function(OpenSplice_configure_targets config homeDir csEnabled)
     else()
         set_target_properties("OpenSplice::ddskernel" PROPERTIES
             IMPORTED_LOCATION${SUFFIX} "${homeDir}/lib/libddskernel.so"
+            IMPORTED_NO_SONAME${SUFFIX} TRUE)
+          set_target_properties("OpenSplice::ddsi2" PROPERTIES
+            IMPORTED_LOCATION${SUFFIX} "${homeDir}/lib/libddsi2.so"
+            IMPORTED_NO_SONAME${SUFFIX} TRUE)
+          set_target_properties("OpenSplice::spliced" PROPERTIES
+            IMPORTED_LOCATION${SUFFIX} "${homeDir}/lib/libspliced.so"
+            IMPORTED_NO_SONAME${SUFFIX} TRUE)
+          set_target_properties("OpenSplice::durability" PROPERTIES
+            IMPORTED_LOCATION${SUFFIX} "${homeDir}/lib/libdurability.so"
             IMPORTED_NO_SONAME${SUFFIX} TRUE)
         set_target_properties("OpenSplice::isocpp" PROPERTIES
             IMPORTED_LOCATION${SUFFIX} "${homeDir}/lib/libdcpsisocpp.so"
@@ -133,15 +158,27 @@ else()
         set(suffx "_clang")
     endif()
 
+    if(DEFINED ANDROID)
+      string(PREPEND suffx "_android")
+    endif()
+
     if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-      set(OpenSplice_config "x86_64.linux${suffx}")
+      set(OpenSplice_config "x86_64.linux")
     elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7l")
       set(OpenSplice_config "armv7l.linux")
-    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64") # armv8?
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "armv-v7a") # Android
+      set(OpenSplice_config "armv7l.linux")
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7-a") # Android
+      set(OpenSplice_config "armv7l.linux")
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+      set(OpenSplice_config "armv8.linux")
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64-v8a") # Android
       set(OpenSplice_config "armv8.linux")
     else()
       set(OpenSplice_config "x86.linux")
     endif()
+
+    string(APPEND OpenSplice_config "${suffx}")
 
 endif(WIN32)
 
@@ -153,6 +190,7 @@ find_path(OpenSplice_HOME_RELEASE
     PATH_SUFFIXES
         "${OpenSplice_config}"
         "OpenSplice/${OpenSplice_config}"
+    NO_CMAKE_FIND_ROOT_PATH
 )
 mark_as_advanced(OpenSplice_HOME_RELEASE)
 find_path(OpenSplice_HOME_DEBUG
@@ -163,6 +201,7 @@ find_path(OpenSplice_HOME_DEBUG
     PATH_SUFFIXES
         "${OpenSplice_config}-dev"
         "OpenSplice/${OpenSplice_config}-dev"
+    NO_CMAKE_FIND_ROOT_PATH
 )
 mark_as_advanced(OpenSplice_HOME_DEBUG)
 OpenSplice_check_dir("${OpenSplice_HOME_RELEASE}" "${OpenSplice_config}" OpenSplice_versionRelease)
