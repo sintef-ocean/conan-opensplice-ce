@@ -1,0 +1,301 @@
+From bf583777f4d8006a175375c37bed1e2aaf3e4160 Mon Sep 17 00:00:00 2001
+From: Richard Bostock <richard.bostock@bbsr.co.uk>
+Date: Mon, 12 Apr 2021 17:27:02 +0100
+Subject: [PATCH] GCC 10 enforces usage of externs for global variables.
+
+Reverted issues on CheckStatus, Fixed definition issue on ARM with GCC10
+---
+ examples/dcps/BuiltInTopics/c/src/CheckStatus.h        | 2 +-
+ examples/dcps/ContentFilteredTopic/c/src/CheckStatus.h | 2 +-
+ examples/dcps/Durability/c/src/CheckStatus.h           | 2 +-
+ examples/dcps/HelloWorld/c/src/CheckStatus.h           | 2 +-
+ examples/dcps/Lifecycle/c/src/CheckStatus.h            | 2 +-
+ examples/dcps/Listener/c/src/CheckStatus.h             | 2 +-
+ examples/dcps/NetworkPartitions/cpp/src/CheckStatus.h  | 1 +
+ examples/dcps/Ownership/c/src/CheckStatus.h            | 2 +-
+ examples/dcps/QueryCondition/c/src/CheckStatus.h       | 2 +-
+ examples/dcps/Tutorial/c/src/CheckStatus.h             | 2 +-
+ examples/dcps/WaitSet/c/src/CheckStatus.h              | 2 +-
+ src/abstraction/os/posix/include/os_os_stdlib.h        | 3 +++
+ src/cpp/code/expr.h                                    | 2 +-
+ src/cpp/code/if.c                                      | 4 ++++
+ src/cpp/code/if.h                                      | 4 ++--
+ src/cpp/code/preprocess.c                              | 1 +
+ src/tools/idlpp/code/idl_genIdlHelper.c                | 4 ++++
+ src/tools/idlpp/code/idl_genIdlHelper.h                | 4 ++--
+ src/tools/idlpp/code/idl_genSimulinkHelper.c           | 4 ++++
+ src/tools/idlpp/code/idl_genSimulinkHelper.h           | 6 +++---
+ 20 files changed, 35 insertions(+), 18 deletions(-)
+
+diff --git a/examples/dcps/BuiltInTopics/c/src/CheckStatus.h b/examples/dcps/BuiltInTopics/c/src/CheckStatus.h
+index b5eba638..cda8a2e3 100755
+--- a/examples/dcps/BuiltInTopics/c/src/CheckStatus.h
++++ b/examples/dcps/BuiltInTopics/c/src/CheckStatus.h
+@@ -33,7 +33,7 @@
+ #include <stdlib.h>
+ 
+ /* Array to hold the names for all ReturnCodes. */
+-char *RetCodeName[13];
++extern char *RetCodeName[13];
+ 
+ /**
+  * Returns the name of an error code.
+diff --git a/examples/dcps/ContentFilteredTopic/c/src/CheckStatus.h b/examples/dcps/ContentFilteredTopic/c/src/CheckStatus.h
+index b5eba638..cda8a2e3 100644
+--- a/examples/dcps/ContentFilteredTopic/c/src/CheckStatus.h
++++ b/examples/dcps/ContentFilteredTopic/c/src/CheckStatus.h
+@@ -33,7 +33,7 @@
+ #include <stdlib.h>
+ 
+ /* Array to hold the names for all ReturnCodes. */
+-char *RetCodeName[13];
++extern char *RetCodeName[13];
+ 
+ /**
+  * Returns the name of an error code.
+diff --git a/examples/dcps/Durability/c/src/CheckStatus.h b/examples/dcps/Durability/c/src/CheckStatus.h
+index b5eba638..cda8a2e3 100644
+--- a/examples/dcps/Durability/c/src/CheckStatus.h
++++ b/examples/dcps/Durability/c/src/CheckStatus.h
+@@ -33,7 +33,7 @@
+ #include <stdlib.h>
+ 
+ /* Array to hold the names for all ReturnCodes. */
+-char *RetCodeName[13];
++extern char *RetCodeName[13];
+ 
+ /**
+  * Returns the name of an error code.
+diff --git a/examples/dcps/HelloWorld/c/src/CheckStatus.h b/examples/dcps/HelloWorld/c/src/CheckStatus.h
+index b5eba638..cda8a2e3 100644
+--- a/examples/dcps/HelloWorld/c/src/CheckStatus.h
++++ b/examples/dcps/HelloWorld/c/src/CheckStatus.h
+@@ -33,7 +33,7 @@
+ #include <stdlib.h>
+ 
+ /* Array to hold the names for all ReturnCodes. */
+-char *RetCodeName[13];
++extern char *RetCodeName[13];
+ 
+ /**
+  * Returns the name of an error code.
+diff --git a/examples/dcps/Lifecycle/c/src/CheckStatus.h b/examples/dcps/Lifecycle/c/src/CheckStatus.h
+index b5eba638..cda8a2e3 100644
+--- a/examples/dcps/Lifecycle/c/src/CheckStatus.h
++++ b/examples/dcps/Lifecycle/c/src/CheckStatus.h
+@@ -33,7 +33,7 @@
+ #include <stdlib.h>
+ 
+ /* Array to hold the names for all ReturnCodes. */
+-char *RetCodeName[13];
++extern char *RetCodeName[13];
+ 
+ /**
+  * Returns the name of an error code.
+diff --git a/examples/dcps/Listener/c/src/CheckStatus.h b/examples/dcps/Listener/c/src/CheckStatus.h
+index b5eba638..cda8a2e3 100644
+--- a/examples/dcps/Listener/c/src/CheckStatus.h
++++ b/examples/dcps/Listener/c/src/CheckStatus.h
+@@ -33,7 +33,7 @@
+ #include <stdlib.h>
+ 
+ /* Array to hold the names for all ReturnCodes. */
+-char *RetCodeName[13];
++extern char *RetCodeName[13];
+ 
+ /**
+  * Returns the name of an error code.
+diff --git a/examples/dcps/NetworkPartitions/cpp/src/CheckStatus.h b/examples/dcps/NetworkPartitions/cpp/src/CheckStatus.h
+index 6ec0863b..afe4dcc7 100644
+--- a/examples/dcps/NetworkPartitions/cpp/src/CheckStatus.h
++++ b/examples/dcps/NetworkPartitions/cpp/src/CheckStatus.h
+@@ -54,3 +54,4 @@ void checkStatus(DDS::ReturnCode_t status, const char *info);
+ void checkHandle(void *handle, const char *info);
+ 
+ #endif
++
+diff --git a/examples/dcps/Ownership/c/src/CheckStatus.h b/examples/dcps/Ownership/c/src/CheckStatus.h
+index b5eba638..cda8a2e3 100644
+--- a/examples/dcps/Ownership/c/src/CheckStatus.h
++++ b/examples/dcps/Ownership/c/src/CheckStatus.h
+@@ -33,7 +33,7 @@
+ #include <stdlib.h>
+ 
+ /* Array to hold the names for all ReturnCodes. */
+-char *RetCodeName[13];
++extern char *RetCodeName[13];
+ 
+ /**
+  * Returns the name of an error code.
+diff --git a/examples/dcps/QueryCondition/c/src/CheckStatus.h b/examples/dcps/QueryCondition/c/src/CheckStatus.h
+index b5eba638..cda8a2e3 100644
+--- a/examples/dcps/QueryCondition/c/src/CheckStatus.h
++++ b/examples/dcps/QueryCondition/c/src/CheckStatus.h
+@@ -33,7 +33,7 @@
+ #include <stdlib.h>
+ 
+ /* Array to hold the names for all ReturnCodes. */
+-char *RetCodeName[13];
++extern char *RetCodeName[13];
+ 
+ /**
+  * Returns the name of an error code.
+diff --git a/examples/dcps/Tutorial/c/src/CheckStatus.h b/examples/dcps/Tutorial/c/src/CheckStatus.h
+index a2c817a3..10e2e07b 100644
+--- a/examples/dcps/Tutorial/c/src/CheckStatus.h
++++ b/examples/dcps/Tutorial/c/src/CheckStatus.h
+@@ -38,7 +38,7 @@
+ #include <stdlib.h>
+ 
+ /* Array to hold the names for all ReturnCodes. */
+-char *RetCodeName[13];
++extern char *RetCodeName[13];
+ 
+ /**
+  * Returns the name of an error code.
+diff --git a/examples/dcps/WaitSet/c/src/CheckStatus.h b/examples/dcps/WaitSet/c/src/CheckStatus.h
+index b5eba638..cda8a2e3 100644
+--- a/examples/dcps/WaitSet/c/src/CheckStatus.h
++++ b/examples/dcps/WaitSet/c/src/CheckStatus.h
+@@ -33,7 +33,7 @@
+ #include <stdlib.h>
+ 
+ /* Array to hold the names for all ReturnCodes. */
+-char *RetCodeName[13];
++extern char *RetCodeName[13];
+ 
+ /**
+  * Returns the name of an error code.
+diff --git a/src/abstraction/os/posix/include/os_os_stdlib.h b/src/abstraction/os/posix/include/os_os_stdlib.h
+index 9e9336a9..ff7d8d25 100644
+--- a/src/abstraction/os/posix/include/os_os_stdlib.h
++++ b/src/abstraction/os/posix/include/os_os_stdlib.h
+@@ -63,6 +63,9 @@ extern "C" {
+ #define OS_ISREG S_ISREG
+ #define OS_ISLNK S_ISLNK
+ 
++#ifndef _POSIX_PATH_MAX
++  #define _POSIX_PATH_MAX 4096
++#endif
+ #define OS_PATH_MAX _POSIX_PATH_MAX
+ 
+ typedef DIR *os_os_dirHandle;
+diff --git a/src/cpp/code/expr.h b/src/cpp/code/expr.h
+index 5464c211..38b555f3 100644
+--- a/src/cpp/code/expr.h
++++ b/src/cpp/code/expr.h
+@@ -35,6 +35,6 @@ extern EORB_CPP_node * read_expr_ (void);
+ extern EORB_CPP_node * read_expr_p (void);
+ extern int eval_expr (int, int);
+ 
+-int expr_sharp;
++extern int expr_sharp;
+ 
+ #endif
+diff --git a/src/cpp/code/if.c b/src/cpp/code/if.c
+index c096b686..cbad34b3 100644
+--- a/src/cpp/code/if.c
++++ b/src/cpp/code/if.c
+@@ -32,6 +32,10 @@
+ extern int debugging;
+ #endif
+ 
++IF *ifstack;
++int n_skipped_ifs;
++
++
+ static void iffalse (void);
+ static void iftrue (void);
+ 
+diff --git a/src/cpp/code/if.h b/src/cpp/code/if.h
+index 8d22421a..32437f40 100644
+--- a/src/cpp/code/if.h
++++ b/src/cpp/code/if.h
+@@ -37,8 +37,8 @@ extern "C"
+ #define IFSTATE_FALSE 1
+ #define IFSTATE_STAYFALSE 2
+ 
+-   IF *ifstack;
+-   int n_skipped_ifs;
++   extern IF *ifstack;
++   extern int n_skipped_ifs;
+ 
+    extern void do_sharp (void);
+    extern void do_if (int);
+diff --git a/src/cpp/code/preprocess.c b/src/cpp/code/preprocess.c
+index 8d083299..f32fa318 100644
+--- a/src/cpp/code/preprocess.c
++++ b/src/cpp/code/preprocess.c
+@@ -18,6 +18,7 @@
+  *   limitations under the License.
+  *
+  */
++#include "if.h"
+ #include "is.h"
+ #include "cpp_malloc.h"
+ #include "accum.h"
+diff --git a/src/tools/idlpp/code/idl_genIdlHelper.c b/src/tools/idlpp/code/idl_genIdlHelper.c
+index 36b7ab40..348772fb 100644
+--- a/src/tools/idlpp/code/idl_genIdlHelper.c
++++ b/src/tools/idlpp/code/idl_genIdlHelper.c
+@@ -39,6 +39,10 @@
+  * files and the idl file with the wrapper topic and Streams API interfaces.
+  */
+ 
++os_iter idl_idlScopeKeyList;
++os_iter idl_idlScopeStreamsList;
++
++
+ static idl_action
+ idl_fileOpen(
+     idl_scope scope,
+diff --git a/src/tools/idlpp/code/idl_genIdlHelper.h b/src/tools/idlpp/code/idl_genIdlHelper.h
+index 091e302a..8ff29092 100644
+--- a/src/tools/idlpp/code/idl_genIdlHelper.h
++++ b/src/tools/idlpp/code/idl_genIdlHelper.h
+@@ -23,8 +23,8 @@
+ 
+ #include "idl_program.h"
+ 
+-os_iter idl_idlScopeKeyList;
+-os_iter idl_idlScopeStreamsList;
++extern os_iter idl_idlScopeKeyList;
++extern os_iter idl_idlScopeStreamsList;
+ 
+ idl_program idl_genIdlHelperProgram (void);
+ 
+diff --git a/src/tools/idlpp/code/idl_genSimulinkHelper.c b/src/tools/idlpp/code/idl_genSimulinkHelper.c
+index eea69bcd..b7b55948 100755
+--- a/src/tools/idlpp/code/idl_genSimulinkHelper.c
++++ b/src/tools/idlpp/code/idl_genSimulinkHelper.c
+@@ -26,6 +26,10 @@
+ #include "os_string.h"
+ #include "os_heap.h"
+ 
++ut_table simulink_propertiesTable;
++ut_table simulink_nameTable;
++char *simulink_propertiesFileName = NULL;
++
+ c_char
+ *simulinkScope(
+         idl_scope scope)
+diff --git a/src/tools/idlpp/code/idl_genSimulinkHelper.h b/src/tools/idlpp/code/idl_genSimulinkHelper.h
+index d025c596..5d931d57 100755
+--- a/src/tools/idlpp/code/idl_genSimulinkHelper.h
++++ b/src/tools/idlpp/code/idl_genSimulinkHelper.h
+@@ -28,9 +28,9 @@
+ #include "idl_typeSpecifier.h"
+ #include "ut_collection.h"
+ 
+-ut_table simulink_propertiesTable;
+-ut_table simulink_nameTable;
+-char *simulink_propertiesFileName;
++extern ut_table simulink_propertiesTable;
++extern ut_table simulink_nameTable;
++extern char *simulink_propertiesFileName;
+ 
+ c_char *simulinkScope(idl_scope typeSpec);
+ ut_table simulink_createTable();
+-- 
+2.11.0
+

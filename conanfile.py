@@ -10,7 +10,7 @@ import sys
 
 class OpenSpliceConan(ConanFile):
     name = "opensplice-ce"
-    version = "6.9.190925"
+    version = "6.9.210323"
     license = "Apache-2.0"
     description = \
         "Vortex OpenSplice Community Edition, an open-source "\
@@ -106,7 +106,13 @@ class OpenSpliceConan(ConanFile):
                               'c++0x', 'c++11')
 
         # patch xtypes errors (remove if this gets fixed...)
-        tools.patch(patch_file=os.path.join('patches','TypeKind.hpp.patch'), base_path=self._source_subfolder)
+        tools.patch(patch_file=os.path.join('patches', 'TypeKind.hpp.patch'),
+                    base_path=self._source_subfolder)
+
+        # fix for gcc10, https://github.com/ADLINK-IST/opensplice/issues/169
+        patchGCC10 = '0001-GCC-10-enforces-usage-of-externs-for-global-variable.patch'
+        tools.patch(patch_file=os.path.join('patches', patchGCC10),
+                    base_path=self._source_subfolder)
 
         # Depend on build platform's odlpp and idlpp executables
         tools.replace_in_file(os.path.join(self._source_subfolder, 'bin',
