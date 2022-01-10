@@ -32,8 +32,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install prerequisites
         run: |
-          pip3 install --upgrade setuptools pip cython wheel
-          pip3 install conan requests
+          pip3 install --upgrade setuptools pip cython wheel requests
+          pip3 install --upgrade conan
           choco install cygwin
           choco install cyg-get
           cyg-get gcc-core make git perl bison flex gawk zip unzip dos2unix

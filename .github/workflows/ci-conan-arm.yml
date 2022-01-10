@@ -34,7 +34,8 @@ jobs:
             -e CONAN_PASSWORD_SINTEF \
             -e CONAN_LOGIN_USERNAME_SINTEF \
             -v $PWD:/home ${THE_IMAGE}:${{ matrix.arch }} /bin/bash -c \
-            "conan remote add sintef ${CONAN_UPLOAD} --insert 1 && \
+            "pip3 install --upgrade conan && \
+            conan remote add sintef ${CONAN_UPLOAD} --insert 1 && \
             conan create \
               -s build_type=${{ matrix.build_type }} \
               -s arch=${{ matrix.arch }} \
