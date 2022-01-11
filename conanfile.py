@@ -181,8 +181,8 @@ int pthread_attr_setinheritsched (pthread_attr_t *attr, int inherit);''')
                 query=f'os=Windows and compiler.version=16 and build_type={self.settings.build_type} and include_cs={self.options.include_cs}',
                 remote_name=remote)
             ID = result['results'][0]['items'][0]['packages'][0]['id']
-            artifact_url = sintef_remote[0].url.replace("api/conan/", "")
-            + f'/sintef/{ self.name }/{ self.version }/stable/0/package/{ ID }/0/conan_package.tgz'
+            artifact_url = sintef_remote[0].url.replace("api/conan/", "") + \
+                f'/sintef/{ self.name }/{ self.version }/stable/0/package/{ ID }/0/conan_package.tgz'
             tools.get(artifact_url)
             return
 
