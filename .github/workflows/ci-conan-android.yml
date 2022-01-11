@@ -34,7 +34,10 @@ jobs:
           sudo apt-get install -y bison flex gawk
           sudo apt-get remove -y '*jdk*'
       - name: Configure Conan
-        run: conan remote add sintef ${CONAN_UPLOAD} --insert 0
+        run: |
+          conan remote add sintef ${CONAN_UPLOAD} --insert 0
+          conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
+          conan config set general.revisions_enabled=1
       - name: Conan create
         run: |
           conan create -s build_type=${{ matrix.build_type }} \

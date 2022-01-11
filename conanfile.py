@@ -1,4 +1,5 @@
 from conans import ConanFile, tools, __version__ as conan_version
+from conans.client.conan_api import Conan
 from conans.errors import ConanInvalidConfiguration
 from conans.model.version import Version
 from distutils.dir_util import copy_tree
@@ -36,7 +37,6 @@ class OpenSpliceConan(ConanFile):
 
     exports_sources = [_build_android, _build_script, _find_script, "patches/*", "setup/*"]
 
-
     @property
     def _ospl_platform(self):
         arch = self.settings.arch.value.lower()
@@ -62,16 +62,6 @@ class OpenSpliceConan(ConanFile):
             raise ConanInvalidConfiguration("'include_cs' is only valid for compiler 'Visual Studio'")
         if self.settings.compiler != "Visual Studio":
             del self.options.include_cs
-
-    def build_requirements(self):
-        # Cygwin installer defective ATM!
-        if self.settings.os == "Windows" and False:
-            self.build_requires("cygwin_installer/2.9.0@bincrafters/stable")
-
-        if self.settings.os == "Android":
-            self.build_requires("android_ndk_installer/r21d@bincrafters/stable")
-
-    def configure(self):
         if self.settings.os == "Android":
             if conan_version < Version("1.24"):
                 raise ConanInvalidConfiguration(
@@ -85,7 +75,20 @@ class OpenSpliceConan(ConanFile):
                 raise ConanInvalidConfiguration(
                     "Recipe only implemented for x86_64 build platform for Android")
 
+    def build_requirements(self):
+        # Cygwin installer defective ATM!
+        if self.settings.os == "Windows" and False:
+            self.build_requires("cygwin_installer/2.9.0@bincrafters/stable")
+
+        if self.settings.os == "Android":
+            self.build_requires("android_ndk_installer/r21d@bincrafters/stable")
+
     def source(self):
+
+        if self.settings.os == "Windows" and self.settings.compiler.version == 17:
+            self.output.warn("Redistribute existing binary for this compiler")
+            return
+
         revision = "OSPL_V" + self.version.replace(".", "_") + "OSS_RELEASE"
         url = "https://github.com/ADLINK-IST/opensplice/archive/" \
             + revision + ".tar.gz"
@@ -164,6 +167,25 @@ int pthread_attr_setinheritsched (pthread_attr_t *attr, int inherit);''')
             copy_tree(src, dst)
 
     def build(self):
+
+        if self.settings.os == "Windows" and self.settings.compiler.version == 17:
+            self.output.warn("Downloading an existing binary artifact")
+            conan, _, _ = Conan.factory()
+            remote = os.environ.get('SINTEF_REMOTE', 'sintef-public')
+            remotes = conan.remote_list()
+            sintef_remote = [e for e in remotes if e.name == remote]
+            if len(sintef_remote) == 0:
+                self.output.error("sintef remote not found, set SINTEF_REMOTE")
+            result = conan.search_packages(
+                f"{ self.name }/{ self.version }@sintef/stable",
+                query=f'os=Windows and compiler.version=16 and build_type={self.settings.build_type} and include_cs={self.options.include_cs}',
+                remote_name=remote)
+            ID = result['results'][0]['items'][0]['packages'][0]['id']
+            artifact_url = sintef_remote[0].url.replace("api/conan/", "")
+            + f'/sintef/{ self.name }/{ self.version }/stable/0/package/{ ID }/0/conan_package.tgz'
+            tools.get(artifact_url)
+            return
+
         config = "dev" if self.settings.build_type == "Debug" else "release"
         if self.settings.os == "Windows":
             env_vars = tools.vcvars_dict(self)
@@ -209,6 +231,11 @@ int pthread_attr_setinheritsched (pthread_attr_t *attr, int inherit);''')
                 ""))
 
     def package(self):
+
+        if self.settings.os == "Windows" and self.settings.compiler.version == 17:
+            self.copy("*")
+            return
+
         suffix = "-dev" if self.settings.build_type == "Debug" else ""
         srcDir = os.path.join(self._source_subfolder, "install", "HDE",
                               self._ospl_platform + suffix)
