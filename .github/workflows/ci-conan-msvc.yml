@@ -1,7 +1,8 @@
+---
 name: MSVC Conan
 
 # This workflow is triggered on pushes to the repository.
-on: [push]
+on: [push, workflow_dispatch]
 
 env:
   SINTEF_REFERENCE: "opensplice-ce*"
@@ -9,7 +10,7 @@ env:
   CONAN_UPLOAD: ${{ secrets.CONAN_URL }}
   CONAN_PASSWORD_SINTEF: ${{ secrets.CONAN_PASSWORD }}
   CONAN_LOGIN_USERNAME_SINTEF: ${{ secrets.CONAN_USER }}
-  CONAN_NON_INTERACTIVE: True
+  CONAN_NON_INTERACTIVE: true
 
 jobs:
   conan-with-msvc:

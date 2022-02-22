@@ -261,7 +261,7 @@ int pthread_attr_setinheritsched (pthread_attr_t *attr, int inherit);''')
         self.cpp_info.includedirs = [
             "include",
             "include/sys",
-            "include/dcps/C++/isocpp2"
+            "include/dcps/C++/isocpp2",
             "include/dcps/C++/SACPP",
         ]
         self.cpp_info.libs = [

@@ -1,15 +1,16 @@
+---
 name: GCC Conan
 
 # This workflow is triggered on pushes to the repository.
-on: [push]
+on: [push, workflow_dispatch]
 
 env:
   SINTEF_REFERENCE: "opensplice-ce*"
   CONAN_UPLOAD: ${{ secrets.CONAN_URL }}
   CONAN_PASSWORD_SINTEF: ${{ secrets.CONAN_PASSWORD }}
   CONAN_LOGIN_USERNAME_SINTEF: ${{ secrets.CONAN_USER }}
-  CONAN_NON_INTERACTIVE: True
-  CONAN_USE_ALWAYS_SHORT_PATHS: True
+  CONAN_NON_INTERACTIVE: true
+  CONAN_USE_ALWAYS_SHORT_PATHS: true
 
 jobs:
   conan-with-gcc:
