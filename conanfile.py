@@ -149,13 +149,20 @@ class OpenSpliceConan(ConanFile):
             '__GNUC_PATCHLEVEL__) < 40100)',
             '__GNUC_PATCHLEVEL__) < 40100) || defined(__ANDROID__)')
 
-
         tools.replace_in_file(
             os.path.join(self._source_subfolder, 'src', 'abstraction', 'os',
                          'posix', 'include', 'os_os_thread.h'),
             "#include <pthread.h>",
             '''#include <pthread.h>
 int pthread_attr_setinheritsched (pthread_attr_t *attr, int inherit);''')
+
+        tools.replace_in_file(
+            os.path.join(self._source_subfolder, 'src', 'api', 'dcps',
+                         'isocpp2', 'include', 'dds', 'sub', 'detail',
+                         'TDataReaderImpl.hpp'),
+            'params.size()',
+            'static_cast<os_uint32>(params.size())')
+
 
         # Add new configurations, such as Android
         if sys.version_info.major >= 3 and sys.version_info.minor >= 9:
