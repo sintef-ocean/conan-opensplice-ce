@@ -1,63 +1,62 @@
-[![GCC Conan](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/GCC%20Conan/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"GCC+Conan")
-[![Clang Conan](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/Clang%20Conan/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"Clang+Conan")
-[![MSVC Conan](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/MSVC%20Conan/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"MSVC+Conan")
-[![Android Conan](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/Android%20Conan/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"Android+Conan")
-
+[![Linux GCC](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/Linux%20GCC/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"Linux+GCC")
+[![Linux Clang](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/Linux%20Clang/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"Linux+Clang")
+[![Windows MSVC](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/Windows%20MSVC/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"Windows+MSVC")
 
 [Conan.io](https://conan.io) recipe for [opensplice-ce](https://github.com/ADLINK-IST/opensplice).
 
-The package is usually consumed using the `conan install` command or a *conanfile.txt*.
-
 ## How to use this package
 
-1. Add remote to conan's package [remotes](https://docs.conan.io/en/latest/reference/commands/misc/remote.html?highlight=remotes):
+1. Add remote to conan's package [remotes](https://docs.conan.io/2/reference/commands/remote.html)
 
    ```bash
-   $ conan remote add sintef https://artifactory.smd.sintef.no/artifactory/conan/conan-local
+   $ conan remote add sintef https://artifactory.smd.sintef.no/artifactory/api/conan/conan-local
    ```
 
-2. Using *conanfile.txt* in your project with *cmake*
+2. Using [*conanfile.txt*](https://docs.conan.io/2/reference/conanfile_txt.html) and *cmake* in your project.
 
-   Add a [*conanfile.txt*](http://docs.conan.io/en/latest/reference/conanfile_txt.html) to your project. This file describes dependencies and your configuration of choice, e.g.:
-
-**Note Windows users**: See _Known recipe issues_ below.
-
+   Add *conanfile.txt*:
    ```
    [requires]
    opensplice-ce/[>=6.9]@sintef/stable
 
-   [imports]
-   licenses, * -> ./licenses @ folder=True
+   [tool_requires]
+   cmake/[>=3.25.0]
+
+   [options]
+
+   [layou]
+   cmake_layout
 
    [generators]
-   cmake_paths
-   virtualenv
+   CMakeDeps
+   CMakeToolchain
+   VirtualBuildEnv
    ```
 
    Insert into your *CMakeLists.txt* something like the following lines:
    ```cmake
-   cmake_minimum_required(VERSION 3.13)
+   cmake_minimum_required(VERSION 3.15)
    project(TheProject CXX)
 
-   include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
-   find_package(OpenSplice REQUIRED)
+   find_package(OpenSplice CONFIG REQUIRED)
 
    add_executable(the_executor code.cpp)
-   target_link_libraries(the_executor OpenSplice::isocpp2) # or OpenSplice::isocpp
+   target_link_libraries(the_executor OpenSplice::isocpp2) # or OpenSplice::isocpp, or OpenSplice::OpenSplice
    ```
-   Then, do
+   Install and build e.g. a Release configuration:
    ```bash
-   $ mkdir build && cd build
-   $ conan install .. -b missing -s build_type=<build_type>
+   $ conan install . -s build_type=Release -pr:b=default
+   $ source build/Release/generators/conanbuild.sh
+   $ cmake --preset conan-release
+   $ cmake --build build/Release
+   $ source build/Release/generators/deactivate_conanbuild.sh
    ```
-   where `<build_type>` is e.g. `Debug` or `Release`.
-   You can now continue with the usual dance with cmake commands for configuration and compilation. For details on how to use conan, please consult [Conan.io docs](http://docs.conan.io/en/latest/)
 
 ## Package options
 
 | Option        | Allowed values    | Default value     |
 | ------------- | ----------------- | ----------------- |
-| -             | -                 | -                 |
+| inclue_cs     | [True, False]     | False             |
 
 
 ## Known recipe issues
@@ -77,7 +76,3 @@ cyg-get gcc-core make git perl bison flex gawk zip unzip
 
 You may also need to specify the path for cygwin bash to help Conan,
 e.g. in `cmd`: `set CONAN_BASH_PATH="C:\tools\cygwin\bin\bash.exe"`
-
-**Note**: The OpenSplice targets for Windows on github workflows are all built with
-toolset v142 because this is what OpenSplice's build system detects. Nevertheless, the
-test_package are built with v141 and succeeds.

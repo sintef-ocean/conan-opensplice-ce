@@ -1,3 +1,5 @@
+build/
+CMakeUserPresets.json
 test_package/build
 *.pyc
 *.swp

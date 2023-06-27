@@ -1,52 +1,62 @@
 ---
-name: MSVC Conan
+name: Windows MSVC
 
-# This workflow is triggered on pushes to the repository.
 on: [push, workflow_dispatch]
 
 env:
-  SINTEF_REFERENCE: "opensplice-ce*"
-  SINTEF_LIBNAME: "opensplice-ce"
   CONAN_UPLOAD: ${{ secrets.CONAN_URL }}
   CONAN_PASSWORD_SINTEF: ${{ secrets.CONAN_PASSWORD }}
   CONAN_LOGIN_USERNAME_SINTEF: ${{ secrets.CONAN_USER }}
-  CONAN_NON_INTERACTIVE: true
+  CONFIG_URL: https://github.com/sintef-ocean/conan-configs.git
 
 jobs:
   conan-with-msvc:
     name: Conan
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-2022
     env:
-      CONAN_USER_HOME_SHORT: C:\c
-      CONAN_USE_ALWAYS_SHORT_PATHS: 1
-      CONAN_BASH_PATH: C:\tools\cygwin\bin\bash.exe
+      USER_CHANNEL: "${{ matrix.conan == '1.0' && 'sintef/stable' || '--user sintef --channel stable' }}"
+      UPLOAD_FLAGS: "${{ matrix.conan == '1.0' && '--all' || '' }}"
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019]
+        conan: ["1.0", "2.0"]
+        profile: [msvc17]
+        compiler_version: [191]
         build_type: [Debug, Release]
         option_include_cs: [include_cs=True, include_cs=False]
-        compiler_version: [16]
-        compiler_toolset: [v141, v142]
-
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install prerequisites
         run: |
-          pip3 install --upgrade setuptools pip cython wheel requests
-          pip3 install --upgrade conan
-          choco install cygwin
-          choco install cyg-get
-          cyg-get gcc-core make git perl bison flex gawk zip unzip dos2unix
+          pip3 install --upgrade setuptools pip cython wheel
+          pip3 install --upgrade conan~=${{ matrix.conan }}
       - name: Configure Conan
-        run: conan remote add sintef ${env:CONAN_UPLOAD} --insert 0
+        run: conan remote add sintef ${{ env.CONAN_UPLOAD }}
+      - name: Get package name Conan 1
+        if: matrix.conan == '1.0'
+        shell: pwsh
+        run: |
+          $package_name=conan inspect --raw name .
+          echo "package_name=$package_name" >> $Env:GITHUB_ENV
+      - name: Get package name Conan 2
+        if: matrix.conan == '2.0'
+        shell: pwsh
+        run: |
+          $package_name=conan inspect -f json . | jq .name -r
+          echo "package_name=$package_name" >> $Env:GITHUB_ENV
       - name: Conan create
         run: |
+          conan config install ${{ env.CONFIG_URL }} --type git -sf conan${{ matrix.conan }}
+          conan config install ${{ env.CONFIG_URL }}  --type git -sf profiles -tf profiles
           conan create -s build_type=${{ matrix.build_type }} `
-            -s compiler.toolset=${{ matrix.compiler_toolset }} `
             -s compiler.version=${{ matrix.compiler_version }} `
-            -o ${env:SINTEF_LIBNAME}:${{matrix.option_include_cs}} `
-            -b missing -b outdated . sintef/stable
+            -pr:b=${{ matrix.profile }} -pr:h=${{ matrix.profile }} `
+            -b missing -b outdated -b ${{ env.package_name }}* `
+            -o ${env:package_name}/*:${{matrix.option_include_cs}} `
+            . ${{ env.USER_CHANNEL }}
       - name: Conan upload
-        run: |
-          conan upload --all -c -r sintef ${env:SINTEF_REFERENCE} --retry 10 --retry-wait 20 --force
+        run: conan upload --confirm -r sintef ${{ env.package_name }}* --force ${{ env.UPLOAD_FLAGS }}
+
+
+# choco install cyg-get
+# cyg-get gcc-core make git perl bison flex gawk zip unzip dos2unix
