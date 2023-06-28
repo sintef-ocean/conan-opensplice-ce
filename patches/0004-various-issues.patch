@@ -1,0 +1,194 @@
+From 0cad597740662b0c67fe368a4be297a92bb0baa0 Mon Sep 17 00:00:00 2001
+From: Joakim Haugen <joakim.haugen@sintef.no>
+Date: Wed, 28 Jun 2023 16:59:18 +0200
+Subject: [PATCH] Fix various issues
+
+---
+ bin/configure_functions                                | 10 +++++-----
+ bin/protoc-gen-ddscpp                                  |  2 +-
+ setup/arm.linux_native-common.mak                      |  2 +-
+ setup/x86_64.linux_clang-default.mak                   |  2 +-
+ src/abstraction/os/linux/code/os_sharedmem.c           |  5 +++++
+ src/abstraction/os/posix/include/os_os_thread.h        |  1 +
+ .../isocpp2/include/dds/sub/detail/TDataReaderImpl.hpp |  2 +-
+ src/services/ddsi2e/core/sysdeps.c                     |  2 +-
+ src/services/ddsi2e/core/sysdeps.h                     |  8 ++++----
+ 9 files changed, 20 insertions(+), 14 deletions(-)
+
+diff --git a/bin/configure_functions b/bin/configure_functions
+index 1702ced..db63af6 100644
+--- a/bin/configure_functions
++++ b/bin/configure_functions
+@@ -328,7 +328,7 @@ setup_pathed_vars ()
+ {
+     SPLICE_BIN_PATH="${OSPL_HOME}/bin"
+     case $host in
+-        CYGWIN_NT*)
++        MSYS_NT*)
+             SPLICE_BIN_PATH="${OSPL_HOME}/lib/${SPLICE_HOST}:$SPLICE_BIN_PATH"
+             ;;
+     esac
+@@ -340,7 +340,7 @@ setup_pathed_vars ()
+     PATH="${SPLICE_BIN_PATH}:${PATH}"
+     set_var SPLICE_BIN_PATH "$SPLICE_BIN_PATH"
+ 
+-    SPLICE_EXEC_PATH="${OSPL_HOME}/exec/${SPLICE_TARGET}"
++    SPLICE_EXEC_PATH="${OSPL_HOME}/exec/${SPLICE_HOST}"
+     if [ -n "${OLD_SPLICE_EXEC_PATH}" ]
+     then
+         PATH=`echo ${PATH} | \
+@@ -358,7 +358,7 @@ setup_pathed_vars ()
+     LD_LIBRARY_PATH="${SPLICE_LIBRARY_PATH}:${LD_LIBRARY_PATH}"
+     set_var SPLICE_LIBRARY_PATH "$SPLICE_LIBRARY_PATH"
+     case $host in
+-        CYGWIN_NT*)
++        MSYS_NT*)
+         PATH="${SPLICE_LIBRARY_PATH}:${PATH}"
+             ;;
+     esac
+@@ -374,7 +374,7 @@ setup_pathed_vars ()
+         LD_LIBRARY_PATH="${SPLICE_LIBRARY_TEST_PATH}:${LD_LIBRARY_PATH}"
+         set_var SPLICE_LIBRARY_TEST_PATH "$SPLICE_LIBRARY_TEST_PATH"
+         case $host in
+-            CYGWIN_NT*)
++            MSYS_NT*)
+             PATH="${SPLICE_LIBRARY_TEST_PATH}:${PATH}"
+                 ;;
+         esac
+@@ -414,7 +414,7 @@ export_vars ()
+     host=`uname -s`
+     OSPL_TMPL_PATH="${OSPL_HOME}/etc/idlpp"
+     case $host in
+-        CYGWIN_NT*)
++        MSYS_NT*)
+             CYGWIN_INSTALL_DRIVE=`(df -k . | grep ":" | awk -F ':' '{ print $1 }')`
+             OSPL_TMPL_PATH=`cygpath -d $OSPL_HOME/etc/idlpp`
+             OSPL_TEMP=`cygpath -w $OSPL_HOME/etc/tmp`
+diff --git a/bin/protoc-gen-ddscpp b/bin/protoc-gen-ddscpp
+index d1e9330..d25e2fa 100644
+--- a/bin/protoc-gen-ddscpp
++++ b/bin/protoc-gen-ddscpp
+@@ -12,7 +12,7 @@ OS_TYPE=`uname`
+ OSPLHOME=$OSPL_HOME
+ 
+ case $OS_TYPE in
+-    CYGWIN_NT*)
++    MSYS_NT*)
+         OSPLHOME=`cygpath -w $OSPL_HOME`
+         DELIM=";"
+         ;;
+diff --git a/setup/arm.linux_native-common.mak b/setup/arm.linux_native-common.mak
+index 362d59c..47f2965 100644
+--- a/setup/arm.linux_native-common.mak
++++ b/setup/arm.linux_native-common.mak
+@@ -88,7 +88,7 @@ endif
+ 
+ # For isocpp2 use c++11 compiler option
+ ifeq ($(GCC_SUPPORTS_CPLUSPLUS11),1)
+-ISOCPP2_CXX_FLAGS=-std=c++0x
++ISOCPP2_CXX_FLAGS=-std=c++11
+ endif
+ 
+ # Disable licensing because RLM not available on ARM
+diff --git a/setup/x86_64.linux_clang-default.mak b/setup/x86_64.linux_clang-default.mak
+index 9c70975..404050d 100644
+--- a/setup/x86_64.linux_clang-default.mak
++++ b/setup/x86_64.linux_clang-default.mak
+@@ -99,7 +99,7 @@ endif
+ 
+ # For isocpp2 use c++11 compiler option
+ ifeq ($(GCC_SUPPORTS_CPLUSPLUS11),1)
+-ISOCPP2_CXX_FLAGS=-std=c++0x
++ISOCPP2_CXX_FLAGS=-std=c++11
+ endif
+ 
+ # Identify linker options for building shared libraries
+diff --git a/src/abstraction/os/linux/code/os_sharedmem.c b/src/abstraction/os/linux/code/os_sharedmem.c
+index d3e2f68..bfeeb6b 100644
+--- a/src/abstraction/os/linux/code/os_sharedmem.c
++++ b/src/abstraction/os/linux/code/os_sharedmem.c
+@@ -27,7 +27,12 @@
+  */
+ 
+ #include <assert.h>
++#ifdef __ANDROID__
++#define OS_SHAREDMEM_FILE_DISABLE
++#define OS_SHAREDMEM_SEG_DISABLE
++#else
+ #include "os__sharedmem.h"
++#endif
+ #include "../posix/code/os_sharedmem_file.c"
+ #include "../svr4/code/os_sharedmem_seg.c"
+ #include "../common/code/os_sharedmem_heap.c"
+diff --git a/src/abstraction/os/posix/include/os_os_thread.h b/src/abstraction/os/posix/include/os_os_thread.h
+index ac652c9..5e1c86c 100644
+--- a/src/abstraction/os/posix/include/os_os_thread.h
++++ b/src/abstraction/os/posix/include/os_os_thread.h
+@@ -27,6 +27,7 @@ extern "C" {
+ #endif
+ 
+ #include <pthread.h>
++int pthread_attr_setinheritsched (pthread_attr_t *attr, int inherit);
+ 
+ #define OS_THREAD_ID_NONE (0U)
+ 
+diff --git a/src/api/dcps/isocpp2/include/dds/sub/detail/TDataReaderImpl.hpp b/src/api/dcps/isocpp2/include/dds/sub/detail/TDataReaderImpl.hpp
+index 5ee62b1..91407c3 100644
+--- a/src/api/dcps/isocpp2/include/dds/sub/detail/TDataReaderImpl.hpp
++++ b/src/api/dcps/isocpp2/include/dds/sub/detail/TDataReaderImpl.hpp
+@@ -614,7 +614,7 @@ dds::sub::detail::DataReader<T>::common_constructor(
+ 
+     std::string name = "reader <" + this->AnyDataReaderDelegate::td_.name() + ">";
+     u_dataReader uReader = u_dataReaderNew(uSubscriber, name.c_str(), expression.c_str(),
+-            params.empty() ? NULL : &params[0], params.size(), uQos);
++            params.empty() ? NULL : &params[0], static_cast<os_uint32>(params.size()), uQos);
+     u_readerQosFree(uQos);
+ 
+     if (!uReader) {
+diff --git a/src/services/ddsi2e/core/sysdeps.c b/src/services/ddsi2e/core/sysdeps.c
+index f3ba3fd..c4c03e6 100644
+--- a/src/services/ddsi2e/core/sysdeps.c
++++ b/src/services/ddsi2e/core/sysdeps.c
+@@ -268,7 +268,7 @@ int __S_exchange_and_add (volatile int *mem, int val)
+ }
+ #endif
+ 
+-#if !(defined __APPLE__ || defined __linux) || (__GNUC__ > 0 && (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__) < 40100)
++#if !(defined __APPLE__ || defined __linux) || (__GNUC__ > 0 && (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__) < 40100) || defined(__ANDROID__)
+ void log_stacktrace (const char *name, os_threadId tid)
+ {
+   OS_UNUSED_ARG (name);
+diff --git a/src/services/ddsi2e/core/sysdeps.h b/src/services/ddsi2e/core/sysdeps.h
+index 6873e0e..5a6fe8d 100644
+--- a/src/services/ddsi2e/core/sysdeps.h
++++ b/src/services/ddsi2e/core/sysdeps.h
+@@ -41,22 +41,22 @@
+ #endif
+ #endif
+ 
+-#if defined (__linux) || defined (__sun) || defined (__APPLE__) || defined (INTEGRITY) || defined (AIX) || defined (OS_RTEMS_DEFS_H) || defined (VXWORKS_RTP) || defined (__Lynx__) || defined (_WRS_KERNEL) || defined (__linux__) || defined (OS_QNX_DEFS_H)
++#if defined (__linux) || defined (__sun) || defined (__APPLE__) || defined (INTEGRITY) || defined (AIX) || defined (OS_RTEMS_DEFS_H) || defined (VXWORKS_RTP) || defined (__Lynx__) || defined (_WRS_KERNEL) || defined (__linux__) || defined (OS_QNX_DEFS_H) || defined(__ANDROID__)
+ #define SYSDEPS_HAVE_MSGHDR 1
+ #define SYSDEPS_HAVE_RECVMSG 1
+ #define SYSDEPS_HAVE_SENDMSG 1
+ #endif
+ 
+-#if defined (__linux) || defined (__sun) || defined (__APPLE__) || defined (INTEGRITY) || defined (AIX) || defined (OS_RTEMS_DEFS_H) || defined (VXWORKS_RTP) || defined (_WRS_KERNEL) || defined (__linux__) || defined (OS_QNX_DEFS_H)
++#if defined (__linux) || defined (__sun) || defined (__APPLE__) || defined (INTEGRITY) || defined (AIX) || defined (OS_RTEMS_DEFS_H) || defined (VXWORKS_RTP) || defined (_WRS_KERNEL) || defined (__linux__) || defined (OS_QNX_DEFS_H) || defined(__ANDROID__)
+ #define SYSDEPS_HAVE_IOVEC 1
+ #endif
+ 
+-#if defined (__linux) || defined (__sun) || defined (__APPLE__) || defined (AIX) || defined (__Lynx__) || defined (OS_QNX_DEFS_H)
++#if defined (__linux) || defined (__sun) || defined (__APPLE__) || defined (AIX) || defined (__Lynx__) || defined (OS_QNX_DEFS_H) || defined(__ANDROID__)
+ #define SYSDEPS_HAVE_RANDOM 1
+ #include <unistd.h>
+ #endif
+ 
+-#if defined (__linux) || defined (__sun) || defined (__APPLE__) || defined (AIX) || defined (OS_QNX_DEFS_H)
++#if defined (__linux) || defined (__sun) || defined (__APPLE__) || defined (AIX) || defined (OS_QNX_DEFS_H) || defined(__ANDROID__)
+ #define SYSDEPS_HAVE_GETRUSAGE 1
+ #include <sys/time.h> /* needed for Linux, exists on all four */
+ #include <sys/times.h> /* needed for AIX, exists on all four */
+-- 
+2.33.0.windows.2
+

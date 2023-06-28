@@ -1,0 +1,147 @@
+From ddac924ccdc60a31b8d30f757e31c28c2cde9c41 Mon Sep 17 00:00:00 2001
+From: Joakim Haugen <joakim.haugen@sintef.no>
+Date: Wed, 28 Jun 2023 12:47:10 +0200
+Subject: [PATCH] patch for vs2019 via 2022
+
+---
+ bin/checkconf                  | 20 +++++++++----------
+ setup/x86_64.win64-default.mak | 35 +++++++++++++++++++++++-----------
+ 2 files changed, 34 insertions(+), 21 deletions(-)
+
+diff --git a/bin/checkconf b/bin/checkconf
+index e90fdef..e5ba29f 100644
+--- a/bin/checkconf
++++ b/bin/checkconf
+@@ -14,7 +14,7 @@ pathcheck ()
+ convert_windows_path ()
+ {
+     case `uname` in
+-        CYGWIN_NT*)
++        MSYS_NT*)
+             if [ ! -d "$1" ]
+             then
+                 echo "ERROR: Path $1 does not exist"
+@@ -154,8 +154,8 @@ msvs_check ()
+ #   VS_VER 14 Windows XP SP2 / VS2005 / .NET framework V3.0 / SDK ?
+ 
+     echo -n "VS: "
+-    VSHOME=$(get_vs_commontools)
+-    setVSEnv "$VSHOME"
++    #VSHOME=$(get_vs_commontools)
++    #setVSEnv "$VSHOME" # Already set
+     VS_OK=$?
+ 
+     if [ $VS_OK == 1 ]
+@@ -392,7 +392,7 @@ check_and_set_native_dir ()
+        return 1
+     fi
+     case `uname` in
+-        CYGWIN_NT*)
++        MSYS_NT*)
+             WINDOWS_PATH=`cygpath -w ${!1} 2>/dev/null`
+             if [ $? == 0 ]
+             then
+@@ -440,7 +440,7 @@ qt_check ()
+         then
+             set_var OSPL_QT_IS_ON yes
+             case `uname` in
+-            CYGWIN_NT*)
++            MSYS_NT*)
+                 convert_windows_path "$QTDIR"
+                 PATH="$UNIX_CONV_PATH/bin:$PATH"
+                 set_var PATH "$PATH"
+@@ -473,7 +473,7 @@ qt_check ()
+             echo "Cannot find Qt libraries. Standalone demo package will not be built. Please specifiy QTLIBDIR."
+         fi
+         case `uname` in
+-        CYGWIN_NT*)
++        MSYS_NT*)
+             # Protect against 'cygwin' Qt. It can include uic-qt4.
+             ;;
+         *)
+@@ -881,7 +881,7 @@ javac_check ()
+         AIX)
+             JAVA_PATH_EXT=ppc
+             ;;
+-        CYGWIN_NT*)
++        MSYS_NT*)
+             JAVA_PATH_EXT=i386
+             case ${SPLICE_HOST} in
+                 x86_64.*)
+@@ -945,7 +945,7 @@ key_value_store_check()
+     fi
+     echo -n "LEVELDB: "
+     case `uname` in
+-        CYGWIN_NT-*)
++        MSYS_NT-*)
+             echo "Disabled pending Windows port"
+             ;;
+         SunOS)
+@@ -1440,7 +1440,7 @@ protoc_check()
+         return 1
+     fi
+     case `uname` in
+-        CYGWIN_NT-*)
++        MSYS_NT-*)
+             launch4j_check
+ 
+             if [ $? != 0 ]
+@@ -1648,7 +1648,7 @@ nodejs_check()
+         set_var INCLUDE_DBT_API_DCPS_NODEJS "yes"
+         convert_windows_path "$NODEJS_HOME"
+ 		case `uname` in
+-        CYGWIN_NT-*)
++        MSYS_NT-*)
+         	PATH="$UNIX_CONV_PATH:$PATH"
+         	set_var PATH "$PATH"
+ 	        ;;
+diff --git a/setup/x86_64.win64-default.mak b/setup/x86_64.win64-default.mak
+index a09261b..2893f1d 100644
+--- a/setup/x86_64.win64-default.mak
++++ b/setup/x86_64.win64-default.mak
+@@ -88,18 +88,31 @@ else
+    VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/Lib/winv6.3/um/x64"
+ 
+    VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/lib/x64"
+-else
+-# VS2015
+-   VS_INCLUDE =  -I"$(VS_HOME)/VC/include"
+-   VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include/10.0.18362.0/ucrt"
+-   VS_INCLUDE += -I"$(WINDOWSSDKDIR)/../8.1/Include/um"
+-   VS_INCLUDE += -I"$(WINDOWSSDKDIR)/../8.1/Include/shared"
++ else
++   # VS2015, VS2017, VS2019
++   ifeq (15,$(findstring 15,$(VisualStudioVersion)))
++     VS_INCLUDE =  -I"$(VS_HOME)/VC/include"
++     VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include/10.0.18362.0/ucrt"
++     VS_INCLUDE += -I"$(WINDOWSSDKDIR)/../8.1/Include/um"
++     VS_INCLUDE += -I"$(WINDOWSSDKDIR)/../8.1/Include/shared"
+    
+-   VS_LIB_FLAGS += -L"$(VS_HOME)/VC/lib/amd64"
+-   VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/Lib/10.0.18362.0/ucrt/x64"
+-   VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/../8.1/Lib/winv6.3/um/x64"
+-   VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/../8.1/lib/x64"
+-endif
++     VS_LIB_FLAGS += -L"$(VS_HOME)/VC/lib/amd64"
++     VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/Lib/10.0.18362.0/ucrt/x64"
++     VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/../8.1/Lib/winv6.3/um/x64"
++     VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/../8.1/lib/x64"
++   else
++    VS_INCLUDE =  -I"$(VS_HOME)/include"
++    VS_INCLUDE +=  -I"$(VS_HOME)/../../../Auxiliary/VS/include"
++
++    VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include/$(WindowsSDKLibVersion)/ucrt"
++    VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include/$(WindowsSDKLibVersion)/um"
++    VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include/$(WindowsSDKLibVersion)/shared"
++
++    VS_LIB_FLAGS += -L"$(VS_HOME)/lib/x64"
++    VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/Lib/$(WindowsSDKLibVersion)/ucrt/x64"
++    VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/Lib/$(WindowsSDKLibVersion)/um/x64"
++   endif
++ endif
+ endif 
+ 
+ ifeq ($(OSPL_USE_CXX11), yes)
+-- 
+2.33.0.windows.2
+

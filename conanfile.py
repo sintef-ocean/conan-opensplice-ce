@@ -1,11 +1,11 @@
 from os.path import join
 from conan import ConanFile, conan_version
 from conan.errors import ConanInvalidConfiguration
-from conan.tools.env import Environment, VirtualBuildEnv
+from conan.tools.env import Environment
 from conan.tools.microsoft import VCVars
-from conan.tools.files import copy, get, replace_in_file, patch
+from conan.tools.files import copy, get, apply_conandata_patches, export_conandata_patches
 from conan.tools.layout import basic_layout
-from conan.tools.microsoft import is_msvc, unix_path
+from conan.tools.microsoft import is_msvc
 from conan.tools.scm import Version
 import os
 import subprocess
@@ -61,6 +61,7 @@ class OpenSpliceConan(ConanFile):
         return arch + "." + system + extra
 
     def export_sources(self):
+        export_conandata_patches(self)
         copy(self, '*', join(self.recipe_folder, "patches"), join(self.export_sources_folder, "patches"))
         copy(self, '*', join(self.recipe_folder, "setup"), join(self.export_sources_folder, "setup"))
         copy(self, self._build_script, self.recipe_folder, self.export_sources_folder)
@@ -70,6 +71,8 @@ class OpenSpliceConan(ConanFile):
     def config_options(self):
         if self.settings.os != "Windows" and not is_msvc(self):
             del self.options.include_cs
+        if self._settings_build.os == "Windows":
+            self.win_bash = True
 
     def compatibility(self):
         if self.settings.compiler == "msvc":
@@ -77,7 +80,7 @@ class OpenSpliceConan(ConanFile):
             candidates = ("190", "191", "192", "193")
             greater_eq = []
             for c in candidates:
-                if Version(com_ver) <= Version(c):
+                if Version(com_ver) >= Version(c):
                     greater_eq.append(c)
             return [{"settings": [("compiler.version", v)]}
                     for v in greater_eq]
@@ -88,7 +91,7 @@ class OpenSpliceConan(ConanFile):
             candidates = ("140", "141", "142", "143")
             greater_eq = []
             for c in candidates:
-                if Version(com_ver) <= Version(c):
+                if Version(com_ver) >= Version(c):
                     greater_eq.append("v" + c)
             return [{"settings": [("compiler.toolset", v)]}
                     for v in greater_eq]
@@ -97,86 +100,16 @@ class OpenSpliceConan(ConanFile):
         basic_layout(self, src_folder="src")
 
     def build_requirements(self):
-        #self.tool_requires("libtool/2.4.7") # maybe not necessary
         if self._settings_build.os == "Windows":
-            self.win_bash = True
             if not self.conf.get("tools.microsoft.bash:path", check_type=str):
                 self.tool_requires("msys2/cci.latest")
-        if is_msvc(self):
-            self.tool_requires("automake/1.16.5")
-
-        self.tool_requires("flex/2.6.4")
-        self.tool_requires("bison/3.8.2")
-        # perl, bison, flex, gawk, zip, unzip, git
+        if self._settings_build.os == "Linux":
+            self.tool_requires("flex/2.6.4")
+            self.tool_requires("bison/3.8.2")
 
     def source(self):
-
         get(self, **self.conan_data["sources"][self.version], strip_root=True)
-
-        replace_in_file(self, join(self.source_folder, 'setup',
-                                           'x86_64.linux-default.mak'),
-                              'c++0x', 'c++11')
-        replace_in_file(self, join(self.source_folder, 'setup',
-                                           'x86_64.linux_clang-default.mak'),
-                              'c++0x', 'c++11')
-        replace_in_file(self, join(self.source_folder, 'setup',
-                                           'arm.linux_native-common.mak'),
-                              'c++0x', 'c++11')
-
-        # patch xtypes errors (remove if this gets fixed...)
-        patch(self, patch_file=join('patches', 'TypeKind.hpp.patch'),
-                    base_path=self.source_folder)
-
-        # fix for gcc10, https://github.com/ADLINK-IST/opensplice/issues/169
-        patchGCC10 = '0001-GCC-10-enforces-usage-of-externs-for-global-variable.patch'
-        patch(self, patch_file=join('patches', patchGCC10),
-                    base_path=self.source_folder)
-
-        # Depend on build platform's odlpp and idlpp executables
-        replace_in_file(self, join(self.source_folder, 'bin',
-                                           'configure_functions'),
-                              'SPLICE_EXEC_PATH="${OSPL_HOME}/exec/${SPLICE_TARGET}"',
-                              'SPLICE_EXEC_PATH="${OSPL_HOME}/exec/${SPLICE_HOST}"')
-
-        # Disable shared memory stuff on android
-        replace_in_file(self, join(self.source_folder, 'src',
-                                           'abstraction', 'os', 'linux',
-                                           'code', 'os_sharedmem.c'),
-                              '#include "os__sharedmem.h"',
-                              '''\
-#ifdef __ANDROID__
-#define OS_SHAREDMEM_FILE_DISABLE
-#define OS_SHAREDMEM_SEG_DISABLE
-#else
-#include "os__sharedmem.h"
-#endif''')
-
-        # "execinfo.h" is not available on android
-        path_to_patch = join(self.source_folder, 'src',
-                                     'services', 'ddsi2e', 'core')
-        replace_in_file(self,
-            join(path_to_patch, 'sysdeps.h'),
-            'defined (OS_QNX_DEFS_H)',
-            'defined (OS_QNX_DEFS_H) || defined(__ANDROID__)')
-
-        replace_in_file(self,
-            join(path_to_patch, 'sysdeps.c'),
-            '__GNUC_PATCHLEVEL__) < 40100)',
-            '__GNUC_PATCHLEVEL__) < 40100) || defined(__ANDROID__)')
-
-        replace_in_file(self,
-            join(self.source_folder, 'src', 'abstraction', 'os',
-                         'posix', 'include', 'os_os_thread.h'),
-            "#include <pthread.h>",
-            '''#include <pthread.h>
-int pthread_attr_setinheritsched (pthread_attr_t *attr, int inherit);''')
-
-        replace_in_file(self,
-            join(self.source_folder, 'src', 'api', 'dcps',
-                         'isocpp2', 'include', 'dds', 'sub', 'detail',
-                         'TDataReaderImpl.hpp'),
-            'params.size()',
-            'static_cast<os_uint32>(params.size())')
+        apply_conandata_patches(self)
 
         # Add new configurations
         copy(self, "*", join(self.export_sources_folder, "setup"),
@@ -188,9 +121,6 @@ int pthread_attr_setinheritsched (pthread_attr_t *attr, int inherit);''')
             ms = VCVars(self)
             ms.generate()
 
-        benv = VirtualBuildEnv(self)
-        benv.generate()
-
         yes_no = lambda v: "yes" if v else "no"
 
         env = Environment()
@@ -201,30 +131,14 @@ int pthread_attr_setinheritsched (pthread_attr_t *attr, int inherit);''')
         env.define("OSPL_USE_CXX11", "yes")
 
         if is_msvc(self):
-            # get compile & ar-lib from automake (or eventually lib source code if available)
-            # it's not always required to wrap CC, CXX & AR with these scripts, it depends on how much love was put in
-            # upstream build files
-            automake_conf = self.dependencies.build["automake"].conf_info
-            compile_wrapper = unix_path(self, automake_conf.get("user.automake:compile-wrapper", check_type=str))
-            ar_wrapper = unix_path(self, automake_conf.get("user.automake:lib-wrapper", check_type=str))
-            env.define("CC", f"{compile_wrapper} cl -nologo")
-            env.define("CXX", f"{compile_wrapper} cl -nologo")
-            env.define("LD", "link -nologo")
-            env.define("AR", f"{ar_wrapper} \"lib -nologo\"")
-            env.define("NM", "dumpbin -symbols")
-            env.define("OBJDUMP", ":")
-            env.define("RANLIB", ":")
-            env.define("STRIP", ":")
             env.define("DISTUTILS_USE_SDK", "1")
             env.define("OVERRIDE_INCLUDE_CS", yes_no(self.options.include_cs))
             env.unset("tmp")
             env.unset("temp")
             env.unset("TMP")
             env.unset("TEMP")
-
-            benvvars = benv.vars(self, scope="build")
-            env.define("VS_HOME", benvvars.get("VSINSTALLDIR"))
-            env.define("WINDOWSSDKDIR", benvvars.get("WindowsSdkDir"))
+            # A hack to avoid issue with idlpp not finding dlls, probably because PATH has too many characters(?)
+            env.prepend_path("PATH", join(self.source_folder, "lib", "x86_64.win64-release"))
 
         env.vars(self).save_script("conanbuild_custom")
 
@@ -235,7 +149,12 @@ int pthread_attr_setinheritsched (pthread_attr_t *attr, int inherit);''')
         if not jobs:
             jobs = os.cpu_count()
 
-        self.run(f"./{self._build_script} {self.source_folder} {self._ospl_platform}-{config} {jobs}", cwd=self.export_sources_folder)
+        source = self.source_folder
+        if self.settings.os == "Windows":
+            source = str(source).replace('\\', '/')
+        msvc = "msvc" if is_msvc(self) else ""
+
+        self.run(f"./{self._build_script} {source} {self._ospl_platform}-{config} {jobs} {msvc}", cwd=self.export_sources_folder)
 
     def package(self):
 
@@ -301,7 +220,6 @@ int pthread_attr_setinheritsched (pthread_attr_t *attr, int inherit);''')
             self.cpp_info.components[module].libs = [module]
             self.cpp_info.components[module].set_property("cmake_target_name", f"OpenSplice::{module}")
             # These target are defined to allow automatic bundling in downstream projects
-            # Are IMPORTED_IMPLIB{CONFIG} is set properly on Windows?
 
         # Note: C-interface not added.
         # Note: CSharp OpenSplice::sacs is handled in OpenSpliceHelper.cmake, a build_module which is included by default
