@@ -3,7 +3,8 @@ from conan import ConanFile, conan_version
 from conan.errors import ConanInvalidConfiguration
 from conan.tools.env import Environment
 from conan.tools.microsoft import VCVars
-from conan.tools.files import copy, get, apply_conandata_patches, export_conandata_patches
+from conan.tools.files import copy, get, replace_in_file
+from conan.tools.files import apply_conandata_patches, export_conandata_patches
 from conan.tools.layout import basic_layout
 from conan.tools.microsoft import is_msvc
 from conan.tools.scm import Version
@@ -110,6 +111,11 @@ class OpenSpliceConan(ConanFile):
     def source(self):
         get(self, **self.conan_data["sources"][self.version], strip_root=True)
         apply_conandata_patches(self)
+
+        # Do not check for Java
+        replace_in_file(self, join(self.source_folder, "bin", "checkconf"),
+                        'echo -n "JAVAC: "',
+                        'echo -n "JAVAC: Skipping Java. "\n    no_javac\n    return $?')
 
         # Add new configurations
         copy(self, "*", join(self.export_sources_folder, "setup"),

@@ -33,13 +33,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y jq gawk
-          pip3 install --upgrade setuptools cython wheel pip
+          pip3 install --upgrade setuptools pip
           pip3 install --upgrade conan~=${{ matrix.conan }}
       - name: Configure Conan
         run: conan remote add sintef ${{ env.CONAN_UPLOAD }}
       - name: Get package name Conan 1
         if: matrix.conan == '1.0'
         run: echo "package_name=$(conan inspect --raw name .)" >> $GITHUB_ENV
+      - name: Build some troublesome packages Conan 1
+        if: matrix.conan == '1.0'
+        run: echo "extra_cmds=-b bison/*" >> $GITHUB_ENV
       - name: Get package name Conan 2
         if: matrix.conan == '2.0'
         run: echo "package_name=$(conan inspect -f json . | jq .name -r)" >> $GITHUB_ENV
@@ -53,6 +56,6 @@ jobs:
             -s compiler.cppstd=${{ env.cppstd }} \
             -pr:b=${{ matrix.profile }} -pr:h=${{ matrix.profile }} \
             -b missing -b outdated -b ${{ env.package_name }}* \
-            . ${{ env.USER_CHANNEL }}
+            ${{ env.extra_cmds }} . ${{ env.USER_CHANNEL }}
       - name: Conan upload
         run: conan upload --confirm -r sintef ${{ env.package_name }}* --force ${{ env.UPLOAD_FLAGS }}
