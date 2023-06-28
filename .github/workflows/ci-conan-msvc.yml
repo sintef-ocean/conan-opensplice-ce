@@ -14,6 +14,10 @@ jobs:
     name: Conan
     runs-on: windows-2022
     env:
+      PKG_REFERENCE: >-
+        ${{ matrix.conan == '1.0' &&
+        format('{0}@{1}/{2}', matrix.version, 'sintef', matrix.channel) ||
+        format('--version {0} --user {1} --channel {2}', matrix.version, 'sintef', matrix.channel) }}
       USER_CHANNEL: "${{ matrix.conan == '1.0' && 'sintef/stable' || '--user sintef --channel stable' }}"
       UPLOAD_FLAGS: "${{ matrix.conan == '1.0' && '--all' || '' }}"
     strategy:
@@ -24,6 +28,8 @@ jobs:
         compiler_version: [191]
         build_type: [Debug, Release]
         option_include_cs: [include_cs=True, include_cs=False]
+        version: ["6.9.210323"]
+        channel: ["${{ (github.head_ref || github.ref_name) == 'master' && 'stable' || 'testing' }}"]
     steps:
       - uses: actions/checkout@v3
       - name: Install prerequisites
@@ -53,7 +59,7 @@ jobs:
             -pr:b=${{ matrix.profile }} -pr:h=${{ matrix.profile }} `
             -b missing -b outdated -b ${{ env.package_name }}* `
             -o ${env:package_name}/*:${{matrix.option_include_cs}} `
-            . ${{ env.USER_CHANNEL }}
+            . ${{ env.PKG_REFERENCE }}
       - name: Conan upload
         run: conan upload --confirm -r sintef ${{ env.package_name }}* --force ${{ env.UPLOAD_FLAGS }}
 

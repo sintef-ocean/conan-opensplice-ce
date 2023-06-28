@@ -117,6 +117,10 @@ class OpenSpliceConan(ConanFile):
                         'echo -n "JAVAC: "',
                         'echo -n "JAVAC: Skipping Java. "\n    no_javac\n    return $?')
 
+        # Use a Dotnet version that might be installed on build server
+        replace_in_file(self, join(self.source_folder, "bin", "checkconf"),
+                        '4.6.1', '4.6.2')
+
         # Add new configurations
         copy(self, "*", join(self.export_sources_folder, "setup"),
              join(self.source_folder, "setup"))
@@ -144,7 +148,10 @@ class OpenSpliceConan(ConanFile):
             env.unset("TMP")
             env.unset("TEMP")
             # A hack to avoid issue with idlpp not finding dlls, probably because PATH has too many characters(?)
-            env.prepend_path("PATH", join(self.source_folder, "lib", "x86_64.win64-release"))
+            if self.settings.build_type == "Release":
+                env.prepend_path("PATH", join(self.source_folder, "lib", "x86_64.win64-release"))
+            elif self.settings.build_type == "Debug":
+                env.prepend_path("PATH", join(self.source_folder, "lib", "x86_64.win64-dev"))
 
         env.vars(self).save_script("conanbuild_custom")
 
