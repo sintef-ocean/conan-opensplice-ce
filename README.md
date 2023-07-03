@@ -24,7 +24,7 @@
 
    [options]
 
-   [layou]
+   [layout]
    cmake_layout
 
    [generators]
@@ -61,18 +61,5 @@
 
 ## Known recipe issues
 
-**Note**: You need [Cygwin](https://www.cygwin.com/) to build this
-package. Currently, this recipe does not install it for you, so you need
-to install it manually. The following additional Cygwin packages are
-needed: `gcc-core, make, git, perl, bison, flex, gawk, zip, unzip`. If
-you have [Chocolatey](https://chocolatey.org/%20) installed you can run
-the following commands:
-
-``` shell
-choco install cygwin
-choco install cyg-get
-cyg-get gcc-core make git perl bison flex gawk zip unzip
-```
-
-You may also need to specify the path for cygwin bash to help Conan,
-e.g. in `cmd`: `set CONAN_BASH_PATH="C:\tools\cygwin\bin\bash.exe"`
+OpenSplice will not build for Visual Studio (19.3 / v14.3) and newer. Packages built with
+">=19.0 / v14.0" are binary compatible.
