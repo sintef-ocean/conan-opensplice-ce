@@ -1,7 +1,12 @@
 
-# will be placed
+if(DEFINED ENV{OSPL_HOME})
+  set(OSPL_HOME "$ENV{OSPL_HOME}")
+else()
+  message(${OpenSplice_MESSAGE_MODE} "Conan: OpenSplice: Did you forget to include VirtualBuildEnv in your conanfile?")
+  get_filename_component(OSPL_HOME "${CMAKE_CURRENT_LIST_DIR}/../" ABSOLUTE)
+endif()
 
-if(EXISTS "$ENV{OSPL_HOME}/bin/dcpssacsAssembly.dll")
+if(EXISTS "${OSPL_HOME}/bin/dcpssacsAssembly.dll")
   if(NOT TARGET "OpenSplice::sacs")
     add_library("OpenSplice::sacs" SHARED IMPORTED)
     message(${OpenSplice_MESSAGE_MODE} "Conan: Component target declared 'OpenSplice::sacs'")
@@ -9,13 +14,13 @@ if(EXISTS "$ENV{OSPL_HOME}/bin/dcpssacsAssembly.dll")
   string(TOUPPER ${CMAKE_BUILD_TYPE} SUFFIX) # Does not handle multiconfig!
   set_target_properties("OpenSplice::sacs" PROPERTIES
     IMPORTED_COMMON_LANGUAGE_RUNTIME_${SUFFIX} "CSharp"
-    IMPORTED_LOCATION_${SUFFIX} "$ENV{OSPL_HOME}/bin/dcpssacsAssembly.dll")
+    IMPORTED_LOCATION_${SUFFIX} "${OSPL_HOME}/bin/dcpssacsAssembly.dll")
 endif()
 
 if(NOT TARGET "OpenSplice:idlpp")
   add_executable("OpenSplice::idlpp" IMPORTED)
   set_property(TARGET "OpenSplice::idlpp" PROPERTY
-    IMPORTED_LOCATION "$ENV{OSPL_HOME}/bin/idlpp")
+    IMPORTED_LOCATION "${OSPL_HOME}/bin/idlpp")
  message(${OpenSplice_MESSAGE_MODE} "Conan: Executable target declared 'OpenSplice::idlpp'")
 endif()
 
