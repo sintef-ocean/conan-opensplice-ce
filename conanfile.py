@@ -1,6 +1,7 @@
 from os.path import join
 from conan import ConanFile, conan_version
 from conan.errors import ConanInvalidConfiguration
+from conan.tools.build import supported_cppstd
 from conan.tools.env import Environment
 from conan.tools.microsoft import VCVars
 from conan.tools.files import copy, get, replace_in_file
@@ -76,6 +77,9 @@ class OpenSpliceConan(ConanFile):
             self.win_bash = True
 
     def compatibility(self):
+
+        cppstds = supported_cppstd(self)
+
         if self.settings.compiler == "msvc":
             com_ver = self.settings.compiler.version
             candidates = ("190", "191", "192", "193")
@@ -83,9 +87,9 @@ class OpenSpliceConan(ConanFile):
             for c in candidates:
                 if Version(com_ver) >= Version(c):
                     greater_eq.append(c)
-            return [{"settings": [("compiler.version", v)]}
-                    for v in greater_eq]
 
+            return [{"settings": [("compiler.version", v), ("compiler.cppstd", w)]}
+                    for v in greater_eq for w in cppstds]
 
         if Version(conan_version).major < 2 and self.settings.compiler == "Visual Studio":
             com_ver = str(self.settings.compiler.toolset).replace("v", "")
@@ -94,6 +98,7 @@ class OpenSpliceConan(ConanFile):
             for c in candidates:
                 if Version(com_ver) >= Version(c):
                     greater_eq.append("v" + c)
+            # Do not handle cppstd in conan 1
             return [{"settings": [("compiler.toolset", v)]}
                     for v in greater_eq]
 
