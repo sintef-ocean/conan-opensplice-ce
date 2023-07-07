@@ -1,5 +1,4 @@
 [![Linux GCC](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/Linux%20GCC/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"Linux+GCC")
-[![Linux Clang](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/Linux%20Clang/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"Linux+Clang")
 [![Windows MSVC](https://github.com/sintef-ocean/conan-opensplice-ce/workflows/Windows%20MSVC/badge.svg)](https://github.com/sintef-ocean/conan-opensplice-ce/actions?query=workflow%3A"Windows+MSVC")
 
 [Conan.io](https://conan.io) recipe for [opensplice-ce](https://github.com/ADLINK-IST/opensplice).
