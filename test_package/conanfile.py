@@ -1,29 +1,26 @@
-from conans import ConanFile, CMake
-import os
+from os import path
+from conan import ConanFile
+from conan.tools.build import can_run
+from conan.tools.cmake import cmake_layout, CMake
 
 
 class OpenSpliceTestConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
-    generators = "cmake_paths", "virtualenv"
+    generators = "CMakeDeps", "CMakeToolchain", "VirtualBuildEnv", "VirtualRunEnv"
+    test_type = "explicit"
 
-    def build_requirements(self):
-        if self.settings.os == "Android":
-            self.build_requires("android_ndk_installer/r21d@bincrafters/stable")
+    def requirements(self):
+        self.requires(self.tested_reference_str)
+
+    def layout(self):
+        cmake_layout(self)
 
     def build(self):
         cmake = CMake(self)
-        cmake.verbose = True
-        if self.settings.os == "Android":
-            cmake.definitions["CMAKE_TOOLCHAIN_FILE"] = os.environ['CONAN_CMAKE_TOOLCHAIN_FILE']
-            cmake.definitions["ANDROID_ABI"] = os.environ['ANDROID_ABI']
-            cmake.definitions["ANDROID_NATIVE_API_LEVEL"] = os.environ['ANDROID_NATIVE_API_LEVEL']
         cmake.configure()
         cmake.build()
 
     def test(self):
-        if self.settings.compiler == "Visual Studio":
-            self.run("activate.bat && " + str(self.settings.build_type) + "\\test_prog.exe")
-        elif self.settings.os == "Android":
-            print("Test with Android is not implemented. If it compiles, it runs..?")
-        else:
-            self.run(". ./activate.sh && ./test_prog")
+        if can_run(self):
+            bin_path = path.join(self.cpp.build.bindir, "test_prog")
+            self.run(bin_path, env="conanrun")

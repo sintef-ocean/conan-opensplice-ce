@@ -1,12 +1,18 @@
-from conans import ConanFile, tools, __version__ as conan_version
-from conans.client.conan_api import Conan
-from conans.errors import ConanInvalidConfiguration
-from conans.model.version import Version
-from distutils.dir_util import copy_tree
+from os.path import join
+from conan import ConanFile, conan_version
+from conan.errors import ConanInvalidConfiguration
+from conan.tools.build import supported_cppstd
+from conan.tools.env import Environment
+from conan.tools.microsoft import VCVars
+from conan.tools.files import copy, get, replace_in_file
+from conan.tools.files import apply_conandata_patches, export_conandata_patches
+from conan.tools.layout import basic_layout
+from conan.tools.microsoft import is_msvc
+from conan.tools.scm import Version
 import os
-import shutil
 import subprocess
-import sys
+
+required_conan_version = ">=1.54.0"
 
 
 class OpenSpliceConan(ConanFile):
@@ -22,20 +28,19 @@ class OpenSpliceConan(ConanFile):
     topics = ("dds", "opensplice", "publish-subscribe", "pub-sub", "communication")
 
     settings = "os", "compiler", "build_type", "arch"
-    options = { "include_cs": [True, False] }
+    options = {
+        "include_cs": [True, False]
+    }
     default_options = {
         "include_cs": False,
-        "cygwin_installer:additional_packages":
-        "gcc-core,make,git,perl,bison,flex,gawk,zip,unzip",
-        "cygwin_installer:with_pear": False
     }
+    package_type = "shared-library"
 
     _build_script = "build-opensplice.sh"
-    _build_android = "build-android.sh"
-    _find_script = "FindOpenSplice.cmake"
-    _source_subfolder = "source_subfolder"
 
-    exports_sources = [_build_android, _build_script, _find_script, "patches/*", "setup/*"]
+    @property
+    def _settings_build(self):
+        return getattr(self, "settings_build", self.settings)
 
     @property
     def _ospl_platform(self):
@@ -57,241 +62,200 @@ class OpenSpliceConan(ConanFile):
 
         return arch + "." + system + extra
 
-    def configure(self):
-        if self.settings.compiler != "Visual Studio" and self.options.include_cs:
-            raise ConanInvalidConfiguration("'include_cs' is only valid for compiler 'Visual Studio'")
-        if self.settings.compiler != "Visual Studio":
+    def export_sources(self):
+        export_conandata_patches(self)
+        copy(self, '*', join(self.recipe_folder, "patches"), join(self.export_sources_folder, "patches"))
+        copy(self, '*', join(self.recipe_folder, "setup"), join(self.export_sources_folder, "setup"))
+        copy(self, self._build_script, self.recipe_folder, self.export_sources_folder)
+        os.chmod(join(self.export_sources_folder, self._build_script), 0o755)
+        copy(self, "OpenSpliceHelpers.cmake", self.recipe_folder, self.export_sources_folder)
+
+    def config_options(self):
+        if self.settings.os != "Windows" and not is_msvc(self):
             del self.options.include_cs
-        if self.settings.os == "Android":
-            if conan_version < Version("1.24"):
-                raise ConanInvalidConfiguration(
-                    "Building for Android requires conan >= 1.24")
-            settings_build = getattr(self, 'settings_build', None)
-            # TODO: this does not work:
-            if settings_build and settings_build.os == "Windows":
-                raise ConanInvalidConfiguration(
-                    "Recipe not implemented for compilation of Android on Windows")
-            if settings_build and settings_build.arch != "x86_64":
-                raise ConanInvalidConfiguration(
-                    "Recipe only implemented for x86_64 build platform for Android")
+        if self._settings_build.os == "Windows":
+            self.win_bash = True
+
+    def compatibility(self):
+
+        cppstds = supported_cppstd(self)
+
+        if self.settings.compiler == "msvc":
+            com_ver = self.settings.compiler.version
+            candidates = ("190", "191", "192", "193")
+            greater_eq = []
+            for c in candidates:
+                if Version(com_ver) >= Version(c):
+                    greater_eq.append(c)
+
+            return [{"settings": [("compiler.version", v), ("compiler.cppstd", w)]}
+                    for v in greater_eq for w in cppstds]
+
+        if Version(conan_version).major < 2 and self.settings.compiler == "Visual Studio":
+            com_ver = str(self.settings.compiler.toolset).replace("v", "")
+            candidates = ("140", "141", "142", "143")
+            greater_eq = []
+            for c in candidates:
+                if Version(com_ver) >= Version(c):
+                    greater_eq.append("v" + c)
+            # Do not handle cppstd in conan 1
+            return [{"settings": [("compiler.toolset", v)]}
+                    for v in greater_eq]
+
+    def layout(self):
+        basic_layout(self, src_folder="src")
 
     def build_requirements(self):
-        # Cygwin installer defective ATM!
-        if self.settings.os == "Windows" and False:
-            self.build_requires("cygwin_installer/2.9.0@bincrafters/stable")
-
-        if self.settings.os == "Android":
-            self.build_requires("android_ndk_installer/r21d@bincrafters/stable")
+        if self._settings_build.os == "Windows":
+            if not self.conf.get("tools.microsoft.bash:path", check_type=str):
+                self.tool_requires("msys2/cci.latest")
+        if self._settings_build.os == "Linux":
+            self.tool_requires("flex/2.6.4")
+            self.tool_requires("bison/3.8.2")
 
     def source(self):
+        get(self, **self.conan_data["sources"][self.version], strip_root=True)
+        apply_conandata_patches(self)
 
-        if self.settings.os == "Windows" and self.settings.compiler.version == 17:
-            self.output.warn("Redistribute existing binary for this compiler")
-            return
+        # Do not check for Java
+        replace_in_file(self, join(self.source_folder, "bin", "checkconf"),
+                        'echo -n "JAVAC: "',
+                        'echo -n "JAVAC: Skipping Java. "\n    no_javac\n    return $?')
 
-        revision = "OSPL_V" + self.version.replace(".", "_") + "OSS_RELEASE"
-        url = "https://github.com/ADLINK-IST/opensplice/archive/" \
-            + revision + ".tar.gz"
-        tools.get(url)
+        # Use a Dotnet version that might be installed on build server
+        replace_in_file(self, join(self.source_folder, "bin", "checkconf"),
+                        '4.6.1', '4.6.2')
 
-        if(os.path.isdir(self._source_subfolder)):
-            shutil.rmtree(self._source_subfolder)
-        os.rename("opensplice-" + revision, self._source_subfolder)
+        # Add new configurations
+        copy(self, "*", join(self.export_sources_folder, "setup"),
+             join(self.source_folder, "setup"))
 
-        tools.replace_in_file(os.path.join(self._source_subfolder, 'setup',
-                                           'x86_64.linux-default.mak'),
-                              'c++0x', 'c++11')
-        tools.replace_in_file(os.path.join(self._source_subfolder, 'setup',
-                                           'x86_64.linux_clang-default.mak'),
-                              'c++0x', 'c++11')
-        tools.replace_in_file(os.path.join(self._source_subfolder, 'setup',
-                                           'arm.linux_native-common.mak'),
-                              'c++0x', 'c++11')
+    def generate(self):
 
-        # patch xtypes errors (remove if this gets fixed...)
-        tools.patch(patch_file=os.path.join('patches', 'TypeKind.hpp.patch'),
-                    base_path=self._source_subfolder)
+        if is_msvc(self):
+            ms = VCVars(self)
+            ms.generate()
 
-        # fix for gcc10, https://github.com/ADLINK-IST/opensplice/issues/169
-        patchGCC10 = '0001-GCC-10-enforces-usage-of-externs-for-global-variable.patch'
-        tools.patch(patch_file=os.path.join('patches', patchGCC10),
-                    base_path=self._source_subfolder)
+        yes_no = lambda v: "yes" if v else "no"
 
-        # Depend on build platform's odlpp and idlpp executables
-        tools.replace_in_file(os.path.join(self._source_subfolder, 'bin',
-                                           'configure_functions'),
-                              'SPLICE_EXEC_PATH="${OSPL_HOME}/exec/${SPLICE_TARGET}"',
-                              'SPLICE_EXEC_PATH="${OSPL_HOME}/exec/${SPLICE_HOST}"')
+        env = Environment()
+        env.define("OVERRIDE_INCLUDE_JAVA", "no")
+        env.define("OVERRIDE_INCLUDE_ORB", "no")
+        env.define("OVERRIDE_INCLUDE_CS", "no")
+        env.define("OSPL_DOCS", "none")
+        env.define("OSPL_USE_CXX11", "yes")
 
-        # Disable shared memory stuff on android
-        tools.replace_in_file(os.path.join(self._source_subfolder, 'src',
-                                           'abstraction', 'os', 'linux',
-                                           'code', 'os_sharedmem.c'),
-                              '#include "os__sharedmem.h"',
-                              '''\
-#ifdef __ANDROID__
-#define OS_SHAREDMEM_FILE_DISABLE
-#define OS_SHAREDMEM_SEG_DISABLE
-#else
-#include "os__sharedmem.h"
-#endif''')
+        if is_msvc(self):
+            env.define("DISTUTILS_USE_SDK", "1")
+            env.define("OVERRIDE_INCLUDE_CS", yes_no(self.options.include_cs))
+            env.unset("tmp")
+            env.unset("temp")
+            env.unset("TMP")
+            env.unset("TEMP")
+            # A hack to avoid issue with idlpp not finding dlls, probably because PATH has too many characters(?)
+            if self.settings.build_type == "Release":
+                env.prepend_path("PATH", join(self.source_folder, "lib", "x86_64.win64-release"))
+            elif self.settings.build_type == "Debug":
+                env.prepend_path("PATH", join(self.source_folder, "lib", "x86_64.win64-dev"))
 
-        # "execinfo.h" is not available on android
-        path_to_patch = os.path.join(self._source_subfolder, 'src',
-                                     'services', 'ddsi2e', 'core')
-        tools.replace_in_file(
-            os.path.join(path_to_patch, 'sysdeps.h'),
-            'defined (OS_QNX_DEFS_H)',
-            'defined (OS_QNX_DEFS_H) || defined(__ANDROID__)')
-
-        tools.replace_in_file(
-            os.path.join(path_to_patch, 'sysdeps.c'),
-            '__GNUC_PATCHLEVEL__) < 40100)',
-            '__GNUC_PATCHLEVEL__) < 40100) || defined(__ANDROID__)')
-
-        tools.replace_in_file(
-            os.path.join(self._source_subfolder, 'src', 'abstraction', 'os',
-                         'posix', 'include', 'os_os_thread.h'),
-            "#include <pthread.h>",
-            '''#include <pthread.h>
-int pthread_attr_setinheritsched (pthread_attr_t *attr, int inherit);''')
-
-        tools.replace_in_file(
-            os.path.join(self._source_subfolder, 'src', 'api', 'dcps',
-                         'isocpp2', 'include', 'dds', 'sub', 'detail',
-                         'TDataReaderImpl.hpp'),
-            'params.size()',
-            'static_cast<os_uint32>(params.size())')
-
-
-        # Add new configurations, such as Android
-        if sys.version_info.major >= 3 and sys.version_info.minor >= 9:
-            shutil.copytree('setup', os.path.join(self._source_subfolder, 'setup'),
-                            dirs_exist_ok=True)
-        else:
-            src = 'setup'
-            dst = os.path.join(self._source_subfolder, 'setup')
-            copy_tree(src, dst)
+        env.vars(self).save_script("conanbuild_custom")
 
     def build(self):
 
-        if self.settings.os == "Windows" and self.settings.compiler.version == 17:
-            self.output.warn("Downloading an existing binary artifact")
-            conan, _, _ = Conan.factory()
-            remote = os.environ.get('SINTEF_REMOTE', 'sintef-public')
-            remotes = conan.remote_list()
-            sintef_remote = [e for e in remotes if e.name == remote]
-            if len(sintef_remote) == 0:
-                self.output.error("sintef remote not found, set SINTEF_REMOTE")
-            result = conan.search_packages(
-                f"{ self.name }/{ self.version }@sintef/stable",
-                query=f'os=Windows and compiler.version=16 and build_type={self.settings.build_type} and include_cs={self.options.include_cs}',
-                remote_name=remote)
-            ID = result['results'][0]['items'][0]['packages'][0]['id']
-            artifact_url = sintef_remote[0].url.replace("api/conan/", "") + \
-                f'/sintef/{ self.name }/{ self.version }/stable/0/package/{ ID }/0/conan_package.tgz'
-            tools.get(artifact_url)
-            return
-
         config = "dev" if self.settings.build_type == "Debug" else "release"
+        jobs = self.conf.get('tools.build:jobs')
+        if not jobs:
+            jobs = os.cpu_count()
+
+        source = self.source_folder
         if self.settings.os == "Windows":
-            env_vars = tools.vcvars_dict(self)
-            with tools.vcvars(self.settings):
-                self.run("bash {} {} {} {} {} '{}' '{}' {}".format(
-                    self._build_script,
-                    self._source_subfolder,
-                    self._ospl_platform + "-" + config,
-                    tools.cpu_count(),
-                    "msvc" if self.settings.compiler == "Visual Studio" else "",
-                    env_vars["VSINSTALLDIR"],
-                    env_vars["WindowsSdkDir"],
-                    "yes" if self.options.include_cs else "no"),
-                         win_bash=True,
-                         subsystem="cygwin")
-        elif self.settings.os == "Android":
-            # Need to build for host first.
-            self.run("bash {} {} x86_64.linux-tools {}".format(
-                self._build_script,
-                self._source_subfolder,
-                tools.cpu_count()))
+            source = str(source).replace('\\', '/')
+        msvc = "msvc" if is_msvc(self) else ""
 
-            # Hack to ensure that %idl.STAMP is run
-            tools.replace_in_file(os.path.join(
-                self._source_subfolder,
-                'src', 'osplcore', 'makefile.mak'),
-                                  'idl | build_tools_stage_idlpp', 'idl ')
-
-            self.run(
-                "bash {} {} {} {} $CC $CXX $RANLIB $AR $SYSROOT $ANDROID_ABI"
-                .format(
-                    self._build_android,
-                    self._source_subfolder,
-                    self._ospl_platform + "-" + config,
-                    tools.cpu_count()),
-                run_environment=True)
-        else:
-            self.run("bash {} {} {} {} {}".format(
-                self._build_script,
-                self._source_subfolder,
-                self._ospl_platform + "-" + config,
-                tools.cpu_count(),
-                ""))
+        self.run(f"./{self._build_script} {source} {self._ospl_platform}-{config} {jobs} {msvc}", cwd=self.export_sources_folder)
 
     def package(self):
 
-        if self.settings.os == "Windows" and self.settings.compiler.version == 17:
-            self.copy("*")
-            return
-
         suffix = "-dev" if self.settings.build_type == "Debug" else ""
-        srcDir = os.path.join(self._source_subfolder, "install", "HDE",
-                              self._ospl_platform + suffix)
-        self.copy("*", dst="include", src=os.path.join(srcDir, "include"))
-        self.copy("*", dst="bin", src=os.path.join(srcDir, "bin"))
-        self.copy("*", dst="lib", src=os.path.join(srcDir, "lib"))
-        self.copy("*", dst="etc", src=os.path.join(srcDir, "etc"))
-        self.copy("*", dst="share", src=os.path.join(srcDir, "tools"),
-                  keep_path=True)
-        self.copy("release.bat" if self.settings.os == "Windows"
-                  else "release.com", dst="", src=srcDir)
-        self.copy("LICENSE", dst="licenses", src=self._source_subfolder)
-        self.copy(self._find_script)
+        src_dir = join(self.source_folder, "install", "HDE", self._ospl_platform + suffix)
 
-        if self.settings.os == "Android":
-            # Copy idlpp tool and its dependency for generating source code
-            srcDir = os.path.join(self._source_subfolder, "install", "HDE",
-                                  'x86_64.linux')
-            self.copy("idlpp*", dst="bin", src=os.path.join(srcDir, "bin"))
-            self.copy("*ddshts*", dst="lib", src=os.path.join(srcDir, "lib"))
+        to_package = [("include", "include"), ("bin", "bin"), ("lib", "lib"), ("etc", "etc"), ("share", "tools")]
+        for item in to_package:
+            copy(self, "*", dst=join(self.package_folder, item[0]), src=join(src_dir, item[1]))
+
+        copy(self,
+             "release.bat" if self.settings.os == "Windows" else "release.com",
+             src=src_dir, dst=self.package_folder)
+        copy(self, "LICENSE",
+             src=self.source_folder,
+             dst=join(self.package_folder, "licenses"))
+        copy(self, "OpenSpliceHelpers.cmake",
+             src=self.export_sources_folder,
+             dst=join(self.package_folder, "cmake"))
 
     def package_info(self):
-        self.cpp_info.includedirs = [
-            "include",
-            "include/sys",
-            "include/dcps/C++/isocpp2",
-            "include/dcps/C++/SACPP",
-        ]
-        self.cpp_info.libs = [
-            "ddskernel",
-            "dcpsisocpp2",
-            "dcpssacpp"
-        ]
-        self.env_info.PATH.append(
-            os.path.join(self.package_folder, "bin"))
-        self.env_info.LD_LIBRARY_PATH.append(
-            os.path.join(self.package_folder, "lib"))
-        self.env_info.DYLD_LIBRARY_PATH.append(
-            os.path.join(self.package_folder, "lib"))
 
-        # Extract OSPL_* environment variables from release script and add them
-        # to self.env_info
-        if (self.settings.os == "Windows"):
-            envCmd = ["cmd.exe", "/C", "release.bat && set"]
-        else:
-            envCmd = ["bash", "-c", "source release.com && env"]
-        proc = subprocess.run(envCmd, stdout=subprocess.PIPE, check=True,
-                              universal_newlines=True)
-        for line in proc.stdout.split('\n'):
-            pair = line.split('=', 1)
-            if len(pair) == 2 and pair[0].startswith("OSPL_"):
-                self.env_info.__setattr__(pair[0], pair[1])
+        self.cpp_info.set_property("cmake_file_name", "OpenSplice")
+        self.cpp_info.set_property("cmake_target_name", "OpenSplice::OpenSplice")
+        self.cpp_info.set_property("cmake_build_modules", [os.path.join("cmake", "OpenSpliceHelpers.cmake")])
+
+
+        self.cpp_info.components["ddskernel"].includedirs = ["include", "include/sys"]
+        self.cpp_info.components["ddskernel"].libs = ["ddskernel"]
+        self.cpp_info.components["ddskernel"].set_property("cmake_target_name", "OpenSplice::ddskernel")
+        self.cpp_info.components["ddskernel"].set_property("nosoname", True)
+        if self.settings.os in ["Linux", "FreeBSD"]:
+            self.cpp_info.components["ddskernel"].system_libs = ["m", "dl", "pthread", "rt"]
+
+        self.cpp_info.components["dcpssacpp"].includedirs = ["include/dcps/C++/SACPP"]
+        self.cpp_info.components["dcpssacpp"].libs = ["dcpssacpp"]
+        self.cpp_info.components["dcpssacpp"].set_property("cmake_target_name", "OpenSplice::dcpssacpp")
+        self.cpp_info.components["dcpssacpp"].set_property("nosoname", True)
+        self.cpp_info.components["dcpssacpp"].requires = ["ddskernel"]
+        if self.settings.os in ["Linux", "FreeBSD"]:
+            self.cpp_info.components["dcpssacpp"].system_libs = ["m"]
+
+        self.cpp_info.components["isocpp"].includedirs = ["include/dcps/C++/isocpp"]
+        self.cpp_info.components["isocpp"].libs = ["dcpsisocpp"]
+        self.cpp_info.components["isocpp"].set_property("cmake_target_name", "OpenSplice::isocpp")
+        self.cpp_info.components["isocpp"].set_property("nosoname", True)
+        self.cpp_info.components["isocpp"].requires = ["dcpssacpp"]
+        if self.settings.os in ["Linux", "FreeBSD"]:
+            self.cpp_info.components["isocpp"].system_libs = ["m"]
+
+        self.cpp_info.components["isocpp2"].includedirs = ["include/dcps/C++/isocpp2"]
+        self.cpp_info.components["isocpp2"].libs = ["dcpsisocpp2"]
+        self.cpp_info.components["isocpp2"].set_property("cmake_target_name", "OpenSplice::isocpp2")
+        self.cpp_info.components["isocpp2"].set_property("nosoname", True)
+        self.cpp_info.components["isocpp2"].requires = ["dcpssacpp"]
+        if self.settings.os in ["Linux", "FreeBSD"]:
+            self.cpp_info.components["isocpp2"].system_libs = ["m"]
+
+
+        # To be loaded with dlopen or similar
+        modules = ["ddsi2", "spliced", "durability"]
+        for module in modules:
+            self.cpp_info.components[module].libs = [module]
+            self.cpp_info.components[module].set_property("cmake_target_name", f"OpenSplice::{module}")
+            # These target are defined to allow automatic bundling in downstream projects
+
+        # Note: C-interface not added.
+        # Note: CSharp OpenSplice::sacs is handled in OpenSpliceHelper.cmake, a build_module which is included by default
+
+        envs = [
+            ("PATH", join(self.package_folder, "bin"), "prepend_path"),
+            ("LD_LIBRARY_PATH", join(self.package_folder, "lib"), "prepend_path"),
+            ("DYLD_LIBRARY_PATH", join(self.package_folder, "lib"), "prepend_path"),
+            ("OSPL_HOME", self.package_folder, "define"),
+            ("OSPL_URI", "file://" + join(self.package_folder, "etc", "config", "ospl.xml"), "define"),
+            ("OSPL_TMPL_PATH", join(self.package_folder, "etc", "idlpp"), "define")
+        ]
+        # prepend CPATH with? OSPL_HOME/{include, include/sys} ?
+
+        for env in envs:
+            if env[2] == "prepend_path":
+                self.buildenv_info.prepend_path(env[0], env[1])
+                # PATH, *LD_LIBRARY_PATH are automatically added to runenv_info
+            if env[2] == "define":
+                self.buildenv_info.define(env[0], env[1])
+                self.runenv_info.define(env[0], env[1])

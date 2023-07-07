@@ -1,0 +1,19 @@
+sources:
+  "6.9.210323":
+    url:
+      - "https://github.com/ADLINK-IST/opensplice/archive/refs/tags/OSPL_V6_9_210323OSS_RELEASE.tar.gz"
+    sha256: "80680197f1e3afb3e8fe165fde9312cedeb71b028a1a70b00e78cd77cc79480d"
+patches:
+  "6.9.210323":
+    - patch_file: "patches/0001-GCC-10-enforces-usage-of-externs-for-global-variable.patch"
+      patch_description: "Fix issue GCC 10 https://github.com/ADLINK-IST/opensplice/issues/169"
+      patch_type: "bugfix"
+    - patch_file: "patches/0002-fix-configure-for-14.2-vs2022.patch"
+      patch_description: "Some fixes to allow building with vs2022"
+      patch_type: "bugfix"
+    - patch_file: "patches/0003-TypeKind.hpp.patch"
+      patch_description: "Fix typo in TypeKind.hpp"
+      patch_type: "bugfix"
+    - patch_file: "patches/0004-various-issues.patch"
+      patch_description: "Depend on build platform's odlpp and idlpp executables, Fix for android, Allow using msys instead of cygwin"
+      patch_type: "bugfix"
