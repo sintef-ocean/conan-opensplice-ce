@@ -67,7 +67,6 @@ class OpenSpliceConan(ConanFile):
         copy(self, '*', join(self.recipe_folder, "patches"), join(self.export_sources_folder, "patches"))
         copy(self, '*', join(self.recipe_folder, "setup"), join(self.export_sources_folder, "setup"))
         copy(self, self._build_script, self.recipe_folder, self.export_sources_folder)
-        os.chmod(join(self.export_sources_folder, self._build_script), 0o755)
         copy(self, "OpenSpliceHelpers.cmake", self.recipe_folder, self.export_sources_folder)
 
     def config_options(self):
@@ -170,6 +169,8 @@ class OpenSpliceConan(ConanFile):
         source = self.source_folder
         if self.settings.os == "Windows":
             source = str(source).replace('\\', '/')
+        else:
+            os.chmod(join(self.export_sources_folder, self._build_script), 0o755)
         msvc = "msvc" if is_msvc(self) else ""
 
         self.run(f"./{self._build_script} {source} {self._ospl_platform}-{config} {jobs} {msvc}", cwd=self.export_sources_folder)

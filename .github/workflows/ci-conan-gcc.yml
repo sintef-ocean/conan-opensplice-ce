@@ -23,9 +23,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        conan: ["1.0", "2.0"]
+        conan: ["2.0"]
         profile: [gcc]
-        compiler_version: [8, 9, 10, 11, 12]
+        compiler_version: [8, 9, 10, 11, 12, 13]
         build_type: [Debug, Release]
         version: ["6.9.210323"]
         channel: ["${{ (github.head_ref || github.ref_name) == 'master' && 'stable' || 'testing' }}"]
