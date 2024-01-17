@@ -19,7 +19,6 @@ jobs:
         format('{0}@{1}/{2}', matrix.version, 'sintef', matrix.channel) ||
         format('--version {0} --user {1} --channel {2}', matrix.version, 'sintef', matrix.channel) }}
       UPLOAD_FLAGS: "${{ matrix.conan == '1.0' && '--all' || '' }}"
-      cppstd: "${{ matrix.compiler_version < 11 && 'gnu14' || 'gnu17' }}"
     strategy:
       fail-fast: false
       matrix:
@@ -58,7 +57,6 @@ jobs:
           conan config install ${{ env.CONFIG_URL }}  --type git -sf profiles -tf profiles
           conan create -s build_type=${{ matrix.build_type }} \
             -s compiler.version=${{ matrix.compiler_version }} \
-            -s compiler.cppstd=${{ env.cppstd }} \
             -pr:b=${{ matrix.profile }} -pr:h=${{ matrix.profile }} \
             -b missing -b outdated -b ${{ env.package_name }}* \
             ${{ env.extra_cmds }} . ${{ env.PKG_REFERENCE }}
