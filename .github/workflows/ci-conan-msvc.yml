@@ -15,11 +15,8 @@ jobs:
     runs-on: windows-2022
     env:
       PKG_REFERENCE: >-
-        ${{ matrix.conan == '1.0' &&
-        format('{0}@{1}/{2}', matrix.version, 'sintef', matrix.channel) ||
-        format('--version {0} --user {1} --channel {2}', matrix.version, 'sintef', matrix.channel) }}
-      USER_CHANNEL: "${{ matrix.conan == '1.0' && 'sintef/stable' || '--user sintef --channel stable' }}"
-      UPLOAD_FLAGS: "${{ matrix.conan == '1.0' && '--all' || '' }}"
+        ${{ format('--version {0} --user {1} --channel {2}', matrix.version, 'sintef', matrix.channel) }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -31,37 +28,31 @@ jobs:
         version: ["6.9.210323"]
         channel: ["${{ (github.head_ref || github.ref_name) == 'master' && 'stable' || 'testing' }}"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install prerequisites
         run: |
           pip3 install --upgrade setuptools pip
           pip3 install --upgrade conan~=${{ matrix.conan }}
       - name: Configure Conan
         run: conan remote add sintef ${{ env.CONAN_UPLOAD }}
-      - name: Get package name Conan 1
-        if: matrix.conan == '1.0'
-        shell: pwsh
-        run: |
-          $package_name=conan inspect --raw name .
-          echo "package_name=$package_name" >> $Env:GITHUB_ENV
       - name: Get package name Conan 2
-        if: matrix.conan == '2.0'
         shell: pwsh
         run: |
           $package_name=conan inspect -f json . | jq .name -r
           echo "package_name=$package_name" >> $Env:GITHUB_ENV
       - name: Conan create
         run: |
-          conan config install ${{ env.CONFIG_URL }} --type git -sf conan${{ matrix.conan }}
+          conan config install ${{ env.CONFIG_URL }} --type git -sf conan2.0
           conan config install ${{ env.CONFIG_URL }}  --type git -sf profiles -tf profiles
           conan create -s build_type=${{ matrix.build_type }} `
             -s compiler.version=${{ matrix.compiler_version }} `
             -pr:b=${{ matrix.profile }} -pr:h=${{ matrix.profile }} `
             -b missing -b outdated -b ${{ env.package_name }}* `
             -o ${env:package_name}/*:${{matrix.option_include_cs}} `
-            . ${{ env.PKG_REFERENCE }}
+            --user sintef --channel stable `
+            .
       - name: Conan upload
-        run: conan upload --confirm -r sintef ${{ env.package_name }}* --force ${{ env.UPLOAD_FLAGS }}
+        run: conan upload --confirm -r sintef ${{ env.package_name }}* --force
 
 
 # choco install cyg-get
