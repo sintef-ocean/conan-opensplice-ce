@@ -12,7 +12,7 @@ env:
 jobs:
   conan-with-msvc:
     name: Conan
-    runs-on: windows-2022
+    runs-on: windows-2025
     env:
       PKG_REFERENCE: >-
         ${{ format('--version {0} --user {1} --channel {2}', matrix.version, 'sintef', matrix.channel) }}
@@ -22,7 +22,7 @@ jobs:
       matrix:
         conan: ["2.0"]
         profile: [msvc17]
-        compiler_version: [191]
+        compiler_version: [192]
         build_type: [Debug, Release]
         option_include_cs: [include_cs=True, include_cs=False]
         version: ["6.9.210323"]
