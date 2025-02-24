@@ -18,12 +18,18 @@ jobs:
       fail-fast: false
       matrix:
         profile: [gcc]
-        compiler_version: [11, 12]
+        compiler_version: [11, 12, 13, 14]
         build_type: [Debug, Release]
         version: ["6.9.210323"]
         channel: ["${{ (github.head_ref || github.ref_name) == 'master' && 'stable' || 'testing' }}"]
         include:
           - linux: debian:latest
+          -
+            linux: debian:trixie
+            compiler_version: 14
+          -
+            linux: ubuntu:24.04
+            compiler_version: 13
           -
             linux: debian:bookworm
             compiler_version: 12

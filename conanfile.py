@@ -81,7 +81,7 @@ class OpenSpliceConan(ConanFile):
 
         if self.settings.compiler == "msvc":
             com_ver = self.settings.compiler.version
-            candidates = ("190", "191", "192", "193")
+            candidates = ("190", "191", "192", "193", "194")
             greater_eq = []
             for c in candidates:
                 if Version(com_ver) >= Version(c):
@@ -92,7 +92,7 @@ class OpenSpliceConan(ConanFile):
 
         if Version(conan_version).major < 2 and self.settings.compiler == "Visual Studio":
             com_ver = str(self.settings.compiler.toolset).replace("v", "")
-            candidates = ("140", "141", "142", "143")
+            candidates = ("140", "141", "142", "143", "144")
             greater_eq = []
             for c in candidates:
                 if Version(com_ver) >= Version(c):
@@ -128,6 +128,11 @@ class OpenSpliceConan(ConanFile):
         # Add new configurations
         copy(self, "*", join(self.export_sources_folder, "setup"),
              join(self.source_folder, "setup"))
+
+        replace_in_file(self, join(self.source_folder, "setup", "x86_64.linux-default.mak"),
+                        "CFLAGS_STRICT_UNINITIALIZED = -Werror=uninitialized",
+                        "CFLAGS_STRICT_UNINITIALIZED = -Werror=uninitialized -Wno-error=maybe-uninitialized")
+
 
     def generate(self):
 
